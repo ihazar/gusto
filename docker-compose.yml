@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hearth-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hearth
+      POSTGRES_PASSWORD: hearth
+      POSTGRES_DB: hearth
+    ports:
+      - "5003:5432"
+    volumes:
+      - hearth-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hearth"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: hearth-redis
+    restart: unless-stopped
+    ports:
+      - "5004:6379"
+    volumes:
+      - hearth-redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # S3-compatible object storage for chef docs/photos (used from Phase 1)
+  minio:
+    image: minio/minio:latest
+    container_name: hearth-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: hearth
+      MINIO_ROOT_PASSWORD: hearthsecret
+    ports:
+      - "5005:9000"
+      - "5006:9001"
+    volumes:
+      - hearth-minio:/data
+
+volumes:
+  hearth-pg:
+  hearth-redis:
+  hearth-minio:

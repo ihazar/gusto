@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Lint affected
+        run: npx nx affected -t lint --base=origin/main
+      - name: Test affected
+        run: npx nx affected -t test --base=origin/main
+      - name: Build affected
+        run: npx nx affected -t build --base=origin/main

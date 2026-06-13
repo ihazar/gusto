@@ -1,0 +1,30 @@
+{
+  "name": "hearth",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Hearth — home-chefs food delivery platform (NestJS API + Angular web + React Native mobile)",
+  "workspaces": [
+    "libs/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "api:dev": "npm run start:dev -w apps/api",
+    "api:build": "npm run build -w apps/api",
+    "api:test": "npm run test -w apps/api",
+    "contracts:build": "npm run build -w libs/contracts",
+    "web:dev": "npm run start -w apps/web",
+    "mobile:dev": "npm run start -w apps/mobile",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "lint": "nx run-many -t lint",
+    "test": "nx run-many -t test",
+    "build": "nx run-many -t build"
+  },
+  "devDependencies": {
+    "nx": "19.8.4",
+    "typescript": "5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

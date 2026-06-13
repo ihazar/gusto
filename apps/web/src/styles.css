@@ -1,0 +1,9 @@
+:root {
+  --hearth: #d2553a;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+body {
+  margin: 0;
+  background: #faf7f2;
+  color: #1d1b16;
+}

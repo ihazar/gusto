@@ -1,0 +1,66 @@
+// Hearth — Phase 0 schema (auth surface only).
+// Chef/menu/order models arrive in Phases 1-3.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  CHEF
+  ADMIN
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+model User {
+  id          String   @id @default(cuid())
+  phone       String   @unique
+  displayName String?
+  roles       UserRole[] @default([CUSTOMER])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  devices       Device[]
+  refreshTokens RefreshToken[]
+}
+
+model Device {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform   DevicePlatform
+  pushToken  String?
+  lastSeenAt DateTime       @default(now())
+
+  refreshTokens RefreshToken[]
+
+  @@unique([userId, id])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId  String?
+  device    Device?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  // sha-256 of the opaque refresh token; raw token never stored.
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  // set when this token is rotated out; presence + a later use = reuse attack.
+  rotatedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
