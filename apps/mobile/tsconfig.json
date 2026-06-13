@@ -5,7 +5,7 @@
     "jsx": "react-native",
     "baseUrl": ".",
     "paths": {
-      "@hearth/contracts": ["../../libs/contracts/src/index.ts"]
+      "@gusto/contracts": ["../../libs/contracts/src/index.ts"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"]

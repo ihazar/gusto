@@ -3,7 +3,7 @@ import {
   AuthResponse,
   DevicePlatform,
   RequestOtpResponse,
-} from '@hearth/contracts';
+} from '@gusto/contracts';
 import { Platform } from 'react-native';
 
 const BASE = (Constants.expoConfig?.extra?.apiUrl as string) ?? 'http://localhost:5000/api';

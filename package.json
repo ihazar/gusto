@@ -1,8 +1,8 @@
 {
-  "name": "hearth",
+  "name": "gusto",
   "version": "0.0.0",
   "private": true,
-  "description": "Hearth — home-chefs food delivery platform (NestJS API + Angular web + React Native mobile)",
+  "description": "Gusto — home-chefs food delivery platform (NestJS API + Angular web + React Native mobile)",
   "workspaces": [
     "libs/*",
     "apps/*"

@@ -1,4 +1,4 @@
-// Hearth — Phase 0 schema (auth surface only).
+// Gusto — Phase 0 schema (auth surface only).
 // Chef/menu/order models arrive in Phases 1-3.
 
 generator client {

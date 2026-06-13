@@ -10,7 +10,7 @@ import {
   logoutSchema,
   VerifyOtpDto,
   verifyOtpSchema,
-} from '@hearth/contracts';
+} from '@gusto/contracts';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { AuthService } from './auth.service';
 

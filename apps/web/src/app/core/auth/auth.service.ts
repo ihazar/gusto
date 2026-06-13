@@ -7,10 +7,10 @@ import {
   AuthUser,
   DevicePlatform,
   RequestOtpResponse,
-} from '@hearth/contracts';
+} from '@gusto/contracts';
 import { environment } from '../../../environments/environment';
 
-const STORAGE_KEY = 'hearth.auth';
+const STORAGE_KEY = 'gusto.auth';
 
 interface StoredAuth {
   user: AuthUser;
@@ -74,10 +74,10 @@ export class AuthService {
   }
 
   private deviceId(): string {
-    let id = localStorage.getItem('hearth.deviceId');
+    let id = localStorage.getItem('gusto.deviceId');
     if (!id) {
       id = crypto.randomUUID();
-      localStorage.setItem('hearth.deviceId', id);
+      localStorage.setItem('gusto.deviceId', id);
     }
     return id;
   }

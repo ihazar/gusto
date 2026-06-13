@@ -2,7 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'node:crypto';
 import * as jwt from 'jsonwebtoken';
-import { AuthTokens, JwtAccessPayload } from '@hearth/contracts';
+import { AuthTokens, JwtAccessPayload } from '@gusto/contracts';
 import { AppConfig } from '../config/configuration';
 import {
   REFRESH_TOKEN_REPOSITORY,

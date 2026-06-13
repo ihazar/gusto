@@ -3,7 +3,7 @@ import {
   AuthResponse,
   RequestOtpResponse,
   VerifyOtpDto,
-} from '@hearth/contracts';
+} from '@gusto/contracts';
 import {
   OTP_PROVIDER,
   OtpProvider,

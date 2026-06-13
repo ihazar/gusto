@@ -1,5 +1,5 @@
 {
-  "name": "@hearth/api",
+  "name": "@gusto/api",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,7 @@
     "lint": "eslint \"src/**/*.ts\""
   },
   "dependencies": {
-    "@hearth/contracts": "*",
+    "@gusto/contracts": "*",
     "@nestjs/common": "10.4.4",
     "@nestjs/config": "3.2.3",
     "@nestjs/core": "10.4.4",
@@ -51,7 +51,7 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": { "^.+\\.ts$": ["ts-jest", { "tsconfig": "tsconfig.json" }] },
     "moduleNameMapper": {
-      "^@hearth/contracts$": "<rootDir>/../../libs/contracts/src/index.ts"
+      "^@gusto/contracts$": "<rootDir>/../../libs/contracts/src/index.ts"
     },
     "collectCoverageFrom": ["src/**/*.ts"]
   }

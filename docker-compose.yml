@@ -1,30 +1,30 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: hearth-postgres
+    container_name: gusto-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: hearth
-      POSTGRES_PASSWORD: hearth
-      POSTGRES_DB: hearth
+      POSTGRES_USER: gusto
+      POSTGRES_PASSWORD: gusto
+      POSTGRES_DB: gusto
     ports:
       - "5003:5432"
     volumes:
-      - hearth-pg:/var/lib/postgresql/data
+      - gusto-pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hearth"]
+      test: ["CMD-SHELL", "pg_isready -U gusto"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: hearth-redis
+    container_name: gusto-redis
     restart: unless-stopped
     ports:
       - "5004:6379"
     volumes:
-      - hearth-redis:/data
+      - gusto-redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -34,19 +34,19 @@ services:
   # S3-compatible object storage for chef docs/photos (used from Phase 1)
   minio:
     image: minio/minio:latest
-    container_name: hearth-minio
+    container_name: gusto-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: hearth
-      MINIO_ROOT_PASSWORD: hearthsecret
+      MINIO_ROOT_USER: gusto
+      MINIO_ROOT_PASSWORD: gustosecret
     ports:
       - "5005:9000"
       - "5006:9001"
     volumes:
-      - hearth-minio:/data
+      - gusto-minio:/data
 
 volumes:
-  hearth-pg:
-  hearth-redis:
-  hearth-minio:
+  gusto-pg:
+  gusto-redis:
+  gusto-minio:

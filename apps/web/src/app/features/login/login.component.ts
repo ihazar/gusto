@@ -11,7 +11,7 @@ type Step = 'phone' | 'code';
   imports: [FormsModule],
   template: `
     <main class="card">
-      <h1>Hearth</h1>
+      <h1>Gusto</h1>
       <p class="sub">Chef &amp; ops portal</p>
 
       @if (step() === 'phone') {
@@ -31,10 +31,10 @@ type Step = 'phone' | 'code';
   styles: [
     `
       .card { max-width: 340px; margin: 12vh auto; display: flex; flex-direction: column; gap: 10px; padding: 28px; background: #fff; border-radius: 16px; box-shadow: 0 6px 30px rgba(0,0,0,.08); }
-      h1 { color: var(--hearth); margin: 0; }
+      h1 { color: var(--gusto); margin: 0; }
       .sub { margin: 0 0 12px; color: #6b6457; }
       input { padding: 10px 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 16px; }
-      button { padding: 11px; border: 0; border-radius: 10px; background: var(--hearth); color: #fff; font-weight: 600; cursor: pointer; }
+      button { padding: 11px; border: 0; border-radius: 10px; background: var(--gusto); color: #fff; font-weight: 600; cursor: pointer; }
       button.link { background: none; color: #6b6457; font-weight: 400; }
       .error { color: #b3261e; }
     `,

@@ -6,7 +6,7 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@hearth/contracts';
+import { UserRole } from '@gusto/contracts';
 import { AuthenticatedUser } from '../strategies/jwt.strategy';
 
 export const ROLES_KEY = 'roles';

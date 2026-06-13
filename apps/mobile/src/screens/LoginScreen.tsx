@@ -44,7 +44,7 @@ export function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.brand}>Hearth</Text>
+      <Text style={styles.brand}>Gusto</Text>
       <Text style={styles.sub}>Home-cooked meals, near you</Text>
 
       {step === 'phone' ? (

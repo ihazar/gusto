@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserRole } from '@hearth/contracts';
+import { UserRole } from '@gusto/contracts';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DeviceInfo, UserRecord, UserRepository } from '../ports';
 

@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
-import { DevicePlatform, UserRole } from '@hearth/contracts';
+import { DevicePlatform, UserRole } from '@gusto/contracts';
 import { AuthService } from '../src/auth/auth.service';
 import { TokenService } from '../src/auth/token.service';
 import { OtpThrottledError, OtpVerificationError } from '../src/auth/auth.errors';

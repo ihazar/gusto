@@ -7,7 +7,7 @@ import { AuthService } from '../../core/auth/auth.service';
   standalone: true,
   template: `
     <main style="padding: 32px">
-      <h1>Welcome to Hearth</h1>
+      <h1>Welcome to Gusto</h1>
       <p>Signed in as {{ auth.user()?.phone }} ({{ auth.user()?.roles?.join(', ') }})</p>
       <p>Chef onboarding &amp; order management land here in Phase 1+.</p>
       <button (click)="logout()">Sign out</button>

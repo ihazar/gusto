@@ -8,7 +8,7 @@
     "useDefineForClassFields": false,
     "experimentalDecorators": true,
     "paths": {
-      "@hearth/contracts": ["../../libs/contracts/src/index.ts"]
+      "@gusto/contracts": ["../../libs/contracts/src/index.ts"]
     }
   },
   "angularCompilerOptions": {

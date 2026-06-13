@@ -1,4 +1,4 @@
-# Hearth 🔥
+# Gusto 🔥
 
 Home-chefs food delivery platform. One monorepo, three apps, one shared contracts library.
 

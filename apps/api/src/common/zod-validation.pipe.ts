@@ -2,7 +2,7 @@ import { BadRequestException, PipeTransform } from '@nestjs/common';
 import { ZodSchema } from 'zod';
 
 /**
- * Validates a request payload against a zod schema from @hearth/contracts,
+ * Validates a request payload against a zod schema from @gusto/contracts,
  * so server and clients share one definition. Usage:
  *   @Body(new ZodValidationPipe(verifyOtpSchema)) dto: VerifyOtpDto
  */

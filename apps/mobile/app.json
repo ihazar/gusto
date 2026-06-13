@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Hearth",
-    "slug": "hearth",
-    "scheme": "hearth",
+    "name": "Gusto",
+    "slug": "gusto",
+    "scheme": "gusto",
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "ios": { "supportsTablet": true, "bundleIdentifier": "com.hearth.app" },
-    "android": { "package": "com.hearth.app" },
+    "ios": { "supportsTablet": true, "bundleIdentifier": "com.gusto.app" },
+    "android": { "package": "com.gusto.app" },
     "extra": {
       "apiUrl": "http://localhost:5000/api"
     }

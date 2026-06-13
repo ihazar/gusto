@@ -1,5 +1,5 @@
 {
-  "name": "@hearth/mobile",
+  "name": "@gusto/mobile",
   "version": "0.0.0",
   "private": true,
   "main": "index.ts",
@@ -11,7 +11,7 @@
     "lint": "echo \"lint placeholder\" && exit 0"
   },
   "dependencies": {
-    "@hearth/contracts": "*",
+    "@gusto/contracts": "*",
     "expo": "~51.0.0",
     "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",

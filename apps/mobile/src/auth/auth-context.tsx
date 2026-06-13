@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { AuthTokens, AuthUser } from '@hearth/contracts';
+import { AuthTokens, AuthUser } from '@gusto/contracts';
 import { api } from '../api/client';
 
 interface AuthState {
@@ -12,8 +12,8 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
-const SESSION_KEY = 'hearth.session';
-const DEVICE_KEY = 'hearth.deviceId';
+const SESSION_KEY = 'gusto.session';
+const DEVICE_KEY = 'gusto.deviceId';
 
 interface Session {
   user: AuthUser;

@@ -1,4 +1,4 @@
-import { DevicePlatform, UserRole } from '@hearth/contracts';
+import { DevicePlatform, UserRole } from '@gusto/contracts';
 
 /** Injection tokens for the auth ports (swap impls per environment/test). */
 export const OTP_PROVIDER = Symbol('OTP_PROVIDER');

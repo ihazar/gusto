@@ -1,7 +1,7 @@
-# Hearth — Home-Chefs Food Delivery Platform
+# Gusto — Home-Chefs Food Delivery Platform
 
-> Working monorepo name: **`hearth`** (a hearth is the heart of a home kitchen).
-> Alternates if the brand is taken: **Sofra**, **Potluck**, **HomePlate**, **Cocina**.
+> Monorepo name: **`gusto`** — cooking with gusto: relish, taste, enthusiasm.
+> Courier persona: **Gus** ("Gus is on the way").
 
 A marketplace connecting home cooks ("home-chefs") with nearby customers. Chefs onboard
 through a vetted KYC + kitchen-approval flow; customers sign up with phone-number 2FA and
@@ -20,7 +20,7 @@ the React Native mobile app, sharing a single contracts library.
    Chefs+Ops ──▶│  Web portal (Angular) │──┼────────────────▶  NestJS API
                 └──────────────────────┘  │                     │
                                           │                     ├─▶ PostgreSQL (Prisma)
-                shared @hearth/contracts ─┘                     ├─▶ Redis (OTP, cache, BullMQ)
+                shared @gusto/contracts ─┘                     ├─▶ Redis (OTP, cache, BullMQ)
                                                                 ├─▶ Stripe (payments + Connect payouts)
                                                                 ├─▶ Twilio Verify (phone OTP / SMS)
                                                                 ├─▶ S3-compatible storage (docs/photos)
@@ -40,7 +40,7 @@ Rationale: customers are mobile-first; chefs manage a kitchen at a counter/deskt
 Nx is the only tool that natively understands NestJS, Angular, **and** React Native/Expo together, with a shared TypeScript graph, `affected` builds, and generators for each.
 
 ```
-hearth/
+gusto/
 ├── apps/
 │   ├── api/                  # NestJS (REST + WebSocket gateway)
 │   ├── web/                  # Angular (chef portal + admin console)
