@@ -12,6 +12,8 @@
     "api:build": "npm run build -w apps/api",
     "api:test": "npm run test -w apps/api",
     "contracts:build": "npm run build -w libs/contracts",
+    "start": "npm run -w apps/api start",
+    "heroku-postbuild": "npm run contracts:build && npm run -w apps/api prisma:generate && npm run -w apps/api build",
     "web:dev": "npm run start -w apps/web",
     "mobile:dev": "npm run start -w apps/mobile",
     "infra:up": "docker compose up -d",
@@ -25,6 +27,6 @@
     "typescript": "5.5.4"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   }
 }

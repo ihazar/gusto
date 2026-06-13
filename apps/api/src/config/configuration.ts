@@ -29,7 +29,8 @@ const num = (v: string | undefined, fallback: number): number => {
 
 export default (): AppConfig => ({
   env: process.env.NODE_ENV ?? 'development',
-  port: num(process.env.API_PORT, 5000),
+  // Heroku (and most PaaS) inject PORT; fall back to API_PORT locally.
+  port: num(process.env.PORT ?? process.env.API_PORT, 5000),
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret-change-me',
