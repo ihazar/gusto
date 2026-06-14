@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomInt } from 'node:crypto';
+import { OtpChannel } from '@gusto/contracts';
 import { OtpProvider } from '../ports';
 import { AppConfig } from '../../config/configuration';
 
@@ -27,14 +28,14 @@ export class MockOtpProvider implements OtpProvider {
     this.isProd = config.get('env', { infer: true }) === 'production';
   }
 
-  async sendCode(phone: string): Promise<void> {
+  async sendCode(phone: string, channel: OtpChannel = 'sms'): Promise<void> {
     const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
     this.challenges.set(phone, {
       code,
       expiresAt: Date.now() + this.cfg.codeTtl * 1000,
       attempts: 0,
     });
-    this.logger.warn(`[MOCK OTP] ${phone} -> ${code} (or use 000000 in dev)`);
+    this.logger.warn(`[MOCK OTP via ${channel}] ${phone} -> ${code} (or use 000000 in dev)`);
   }
 
   async verifyCode(phone: string, code: string): Promise<boolean> {

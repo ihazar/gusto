@@ -23,7 +23,7 @@ export class AuthController {
   requestOtp(
     @Body(new ZodValidationPipe(requestOtpSchema)) dto: RequestOtpDto,
   ): Promise<RequestOtpResponse> {
-    return this.auth.requestOtp(dto.phone);
+    return this.auth.requestOtp(dto.phone, dto.channel);
   }
 
   @Post('otp/verify')

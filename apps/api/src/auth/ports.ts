@@ -1,4 +1,4 @@
-import { DevicePlatform, UserRole } from '@gusto/contracts';
+import { DevicePlatform, OtpChannel, UserRole } from '@gusto/contracts';
 
 /** Injection tokens for the auth ports (swap impls per environment/test). */
 export const OTP_PROVIDER = Symbol('OTP_PROVIDER');
@@ -21,7 +21,7 @@ export interface DeviceInfo {
 
 /** Sends and verifies one-time codes (Twilio Verify in prod, mock in dev/test). */
 export interface OtpProvider {
-  sendCode(phone: string): Promise<void>;
+  sendCode(phone: string, channel: OtpChannel): Promise<void>;
   verifyCode(phone: string, code: string): Promise<boolean>;
 }
 

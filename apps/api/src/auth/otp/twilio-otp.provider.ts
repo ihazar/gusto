@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import twilio, { Twilio } from 'twilio';
+import { OtpChannel } from '@gusto/contracts';
 import { OtpProvider } from '../ports';
 import { AppConfig } from '../../config/configuration';
 
@@ -28,10 +29,10 @@ export class TwilioOtpProvider implements OtpProvider {
     return this.clientRef;
   }
 
-  async sendCode(phone: string): Promise<void> {
+  async sendCode(phone: string, channel: OtpChannel = 'sms'): Promise<void> {
     await this.client.verify.v2
       .services(this.cfg.verifyServiceSid)
-      .verifications.create({ to: phone, channel: 'sms' });
+      .verifications.create({ to: phone, channel });
   }
 
   async verifyCode(phone: string, code: string): Promise<boolean> {

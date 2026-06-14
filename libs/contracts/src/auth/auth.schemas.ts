@@ -10,8 +10,12 @@ export const otpCodeSchema = z
   .string()
   .regex(/^\d{6}$/, 'Code must be 6 digits');
 
+export const otpChannelSchema = z.enum(['sms', 'whatsapp']);
+export type OtpChannel = z.infer<typeof otpChannelSchema>;
+
 export const requestOtpSchema = z.object({
   phone: phoneSchema,
+  channel: otpChannelSchema.optional().default('sms'),
 });
 
 export const verifyOtpSchema = z.object({

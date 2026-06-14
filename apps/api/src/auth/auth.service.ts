@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   AuthResponse,
+  OtpChannel,
   RequestOtpResponse,
   VerifyOtpDto,
 } from '@gusto/contracts';
@@ -30,14 +31,14 @@ export class AuthService {
    * Step 1 of phone 2FA. Always returns a generic ack so callers can't probe
    * which numbers exist. Throttled per phone.
    */
-  async requestOtp(phone: string): Promise<RequestOtpResponse> {
+  async requestOtp(phone: string, channel: OtpChannel = 'sms'): Promise<RequestOtpResponse> {
     const limit = await this.rateLimiter.hit(`otp:${phone}`);
     if (!limit.allowed) {
       throw new OtpThrottledError(limit.resendAfter);
     }
 
     try {
-      await this.otp.sendCode(phone);
+      await this.otp.sendCode(phone, channel);
     } catch (err) {
       // Don't leak provider errors to the caller; log for ops.
       this.logger.error(`OTP send failed for ${phone}: ${(err as Error).message}`);

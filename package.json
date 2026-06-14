@@ -13,7 +13,7 @@
     "api:test": "npm run test -w apps/api",
     "contracts:build": "npm run build -w libs/contracts",
     "start": "npm run -w apps/api start",
-    "heroku-postbuild": "npm run contracts:build && npm run -w apps/api prisma:generate && npm run -w apps/api build",
+    "heroku-postbuild": "npm run contracts:build && npm run -w apps/api prisma:generate && npm run -w apps/web build && npm run -w apps/api build",
     "web:dev": "npm run start -w apps/web",
     "mobile:dev": "npm run start -w apps/mobile",
     "infra:up": "docker compose up -d",

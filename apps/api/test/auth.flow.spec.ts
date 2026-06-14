@@ -19,7 +19,7 @@ import {
 class FakeOtp implements OtpProvider {
   lastCode = '123456';
   sent: string[] = [];
-  async sendCode(phone: string): Promise<void> {
+  async sendCode(phone: string, _channel: 'sms' | 'whatsapp' = 'sms'): Promise<void> {
     this.sent.push(phone);
   }
   async verifyCode(_phone: string, code: string): Promise<boolean> {

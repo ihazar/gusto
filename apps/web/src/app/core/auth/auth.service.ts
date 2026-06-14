@@ -6,6 +6,7 @@ import {
   AuthTokens,
   AuthUser,
   DevicePlatform,
+  OtpChannel,
   RequestOtpResponse,
 } from '@gusto/contracts';
 import { environment } from '../../../environments/environment';
@@ -27,10 +28,10 @@ export class AuthService {
 
   constructor(private readonly http: HttpClient) {}
 
-  /** Step 1: send a one-time code to the phone number. */
-  requestOtp(phone: string): Promise<RequestOtpResponse> {
+  /** Step 1: send a one-time code to the phone number over SMS or WhatsApp. */
+  requestOtp(phone: string, channel: OtpChannel = 'sms'): Promise<RequestOtpResponse> {
     return firstValueFrom(
-      this.http.post<RequestOtpResponse>(`${this.base}/auth/otp/request`, { phone }),
+      this.http.post<RequestOtpResponse>(`${this.base}/auth/otp/request`, { phone, channel }),
     );
   }
 
