@@ -13,6 +13,8 @@ export interface AppConfig {
     maxAttempts: number;
     requestWindow: number;
     maxRequestsPerWindow: number;
+    /** When set, the mock provider accepts this code in any environment (test/demo). */
+    testCode: string;
   };
   twilio: {
     accountSid: string;
@@ -43,6 +45,7 @@ export default (): AppConfig => ({
     maxAttempts: num(process.env.OTP_MAX_ATTEMPTS, 5),
     requestWindow: num(process.env.OTP_REQUEST_WINDOW, 3600),
     maxRequestsPerWindow: num(process.env.OTP_MAX_REQUESTS_PER_WINDOW, 5),
+    testCode: process.env.OTP_TEST_CODE ?? '',
   },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID ?? '',
