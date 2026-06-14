@@ -55,7 +55,7 @@ type Step = 'phone' | 'code';
             <h2>Enter your code</h2>
             <p class="sub">Sent via {{ channel() === 'whatsapp' ? 'WhatsApp' : 'SMS' }} to {{ submittedPhone }}</p>
             <label for="code">6-digit code</label>
-            <input id="code" name="code" [(ngModel)]="code" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+            <input id="code" name="code" class="otp" [(ngModel)]="code" placeholder="------" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
             <button class="primary" [disabled]="busy() || code.length < 6" (click)="verify()">
               {{ busy() ? 'Verifying…' : 'Verify & enter' }}
             </button>
@@ -144,6 +144,8 @@ type Step = 'phone' | 'code';
       .phone-row select { border: 1px solid #e3ddd2; border-radius: 12px; padding: 0 8px; font-size: 15px; background: #fff; color: #1d1b16; cursor: pointer; }
       .phone-row input { flex: 1; min-width: 0; }
       .preview { margin: 2px 0 0; font-size: 13px; color: #6b6457; }
+      .otp { text-align: center; letter-spacing: 10px; font-size: 22px; font-weight: 700; padding-left: 10px; }
+      .otp::placeholder { letter-spacing: 10px; color: #ccc4b6; }
       .seg { display: flex; background: #f1ece3; border-radius: 12px; padding: 4px; gap: 4px; }
       .seg button { flex: 1; padding: 9px; border: 0; border-radius: 9px; background: transparent; color: #6b6457; font-weight: 600; cursor: pointer; font-size: 14px; }
       .seg button.active { background: #fff; color: var(--gusto); box-shadow: 0 1px 4px rgba(0,0,0,.08); }

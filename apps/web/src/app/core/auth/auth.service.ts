@@ -77,9 +77,21 @@ export class AuthService {
   private deviceId(): string {
     let id = localStorage.getItem('gusto.deviceId');
     if (!id) {
-      id = crypto.randomUUID();
+      id = this.randomId();
       localStorage.setItem('gusto.deviceId', id);
     }
     return id;
+  }
+
+  /** UUID-ish id that also works in insecure (http) contexts where
+   *  crypto.randomUUID() is unavailable. */
+  private randomId(): string {
+    const c = globalThis.crypto;
+    if (c?.randomUUID) return c.randomUUID();
+    if (c?.getRandomValues) {
+      const b = c.getRandomValues(new Uint8Array(16));
+      return Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    }
+    return `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 }
