@@ -23,3 +23,12 @@ export class OtpSendError extends HttpException {
     );
   }
 }
+
+export class OtpRegionBlockedError extends HttpException {
+  constructor() {
+    super(
+      "We can't send a code to that number right now — the messaging provider has restricted this region/channel.",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
