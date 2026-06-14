@@ -214,8 +214,20 @@ export class LandingComponent {
 
   /** Combine country code + national part into E.164, dropping spaces and a leading 0. */
   private toE164(): string {
-    const national = this.nationalNumber.replace(/\D/g, '').replace(/^0+/, '');
-    return `${this.countryCode}${national}`;
+    const cc = this.countryCode.replace(/\D/g, ''); // e.g. "972"
+    const trimmed = this.nationalNumber.trim();
+
+    // If the user pasted a full international number, respect it as-is.
+    if (trimmed.startsWith('+')) {
+      return '+' + trimmed.replace(/\D/g, '');
+    }
+
+    let digits = trimmed.replace(/\D/g, '');
+    if (digits.startsWith('00')) digits = digits.slice(2); // 00-prefixed international form
+    if (cc && digits.startsWith(cc)) digits = digits.slice(cc.length); // doubled country code
+    digits = digits.replace(/^0+/, ''); // national trunk 0
+
+    return `+${cc}${digits}`;
   }
 
   /** Live preview of the exact E.164 number that will be sent to Twilio. */
