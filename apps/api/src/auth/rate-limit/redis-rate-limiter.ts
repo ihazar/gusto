@@ -18,9 +18,14 @@ export class RedisRateLimiter implements RateLimiter {
     const otp = config.get('otp', { infer: true });
     this.windowSec = otp.requestWindow;
     this.max = otp.maxRequestsPerWindow;
-    // lazyConnect so registering this provider in dev/mock mode doesn't open
-    // a socket to a Redis that may not be running.
-    this.redis = new Redis(config.get('redisUrl', { infer: true }), { lazyConnect: true });
+    const url = config.get('redisUrl', { infer: true });
+    this.redis = new Redis(url, {
+      // lazyConnect so registering this provider in dev/mock mode doesn't open
+      // a socket to a Redis that may not be running.
+      lazyConnect: true,
+      // Heroku Key-Value Store serves rediss:// with a self-signed cert.
+      ...(url.startsWith('rediss://') ? { tls: { rejectUnauthorized: false } } : {}),
+    });
   }
 
   async hit(key: string): Promise<RateLimitResult> {
