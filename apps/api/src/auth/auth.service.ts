@@ -14,7 +14,7 @@ import {
   UserRepository,
 } from './ports';
 import { TokenService } from './token.service';
-import { OtpVerificationError, OtpThrottledError } from './auth.errors';
+import { OtpVerificationError, OtpThrottledError, OtpSendError } from './auth.errors';
 
 @Injectable()
 export class AuthService {
@@ -40,8 +40,11 @@ export class AuthService {
     try {
       await this.otp.sendCode(phone, channel);
     } catch (err) {
-      // Don't leak provider errors to the caller; log for ops.
+      // Passwordless login creates the user at verify time, so request-time
+      // failures reveal nothing about existing accounts — surface them so the
+      // client can show a real error instead of a silent "ok".
       this.logger.error(`OTP send failed for ${phone}: ${(err as Error).message}`);
+      throw new OtpSendError();
     }
 
     return { ok: true, resendAfter: limit.resendAfter };

@@ -39,13 +39,20 @@ type Step = 'phone' | 'code';
               <button type="button" [class.active]="channel() === 'whatsapp'" (click)="channel.set('whatsapp')">WhatsApp</button>
             </div>
             <label for="phone">Phone number</label>
-            <input id="phone" name="phone" [(ngModel)]="phone" placeholder="+972545953217" inputmode="tel" autocomplete="tel" />
-            <button class="primary" [disabled]="busy() || !phone" (click)="sendCode()">
+            <div class="phone-row">
+              <select name="cc" [(ngModel)]="countryCode" aria-label="Country code">
+                @for (c of countries; track c.dial) {
+                  <option [value]="c.dial">{{ c.flag }} {{ c.dial }}</option>
+                }
+              </select>
+              <input id="phone" name="phone" [(ngModel)]="nationalNumber" placeholder="54 595 3217" inputmode="tel" autocomplete="tel" />
+            </div>
+            <button class="primary" [disabled]="busy() || !nationalNumber" (click)="sendCode()">
               {{ busy() ? 'Sending…' : 'Log in' }}
             </button>
           } @else {
             <h2>Enter your code</h2>
-            <p class="sub">Sent via {{ channel() === 'whatsapp' ? 'WhatsApp' : 'SMS' }} to {{ phone }}</p>
+            <p class="sub">Sent via {{ channel() === 'whatsapp' ? 'WhatsApp' : 'SMS' }} to {{ submittedPhone }}</p>
             <label for="code">6-digit code</label>
             <input id="code" name="code" [(ngModel)]="code" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
             <button class="primary" [disabled]="busy() || code.length < 6" (click)="verify()">
@@ -132,6 +139,9 @@ type Step = 'phone' | 'code';
       label { font-size: 13px; font-weight: 600; color: #44403a; }
       input { padding: 13px 14px; border: 1px solid #e3ddd2; border-radius: 12px; font-size: 17px; outline: none; transition: border-color .15s; }
       input:focus { border-color: var(--gusto); }
+      .phone-row { display: flex; gap: 8px; }
+      .phone-row select { border: 1px solid #e3ddd2; border-radius: 12px; padding: 0 8px; font-size: 15px; background: #fff; color: #1d1b16; cursor: pointer; }
+      .phone-row input { flex: 1; min-width: 0; }
       .seg { display: flex; background: #f1ece3; border-radius: 12px; padding: 4px; gap: 4px; }
       .seg button { flex: 1; padding: 9px; border: 0; border-radius: 9px; background: transparent; color: #6b6457; font-weight: 600; cursor: pointer; font-size: 14px; }
       .seg button.active { background: #fff; color: var(--gusto); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
@@ -180,18 +190,43 @@ export class LandingComponent {
     'Italian', 'Thai', 'Mexican', 'Moroccan', 'Indian',
   ];
 
+  readonly countries = [
+    { dial: '+972', flag: '🇮🇱' },
+    { dial: '+1', flag: '🇺🇸' },
+    { dial: '+44', flag: '🇬🇧' },
+    { dial: '+49', flag: '🇩🇪' },
+    { dial: '+33', flag: '🇫🇷' },
+    { dial: '+39', flag: '🇮🇹' },
+    { dial: '+91', flag: '🇮🇳' },
+  ];
+
   step = signal<Step>('phone');
   channel = signal<OtpChannel>('sms');
   busy = signal(false);
   error = signal<string | null>(null);
-  phone = '';
+  countryCode = '+972';
+  nationalNumber = '';
+  /** The composed E.164 number actually sent to the API. */
+  submittedPhone = '';
   code = '';
 
+  /** Combine country code + national part into E.164, dropping spaces and a leading 0. */
+  private toE164(): string {
+    const national = this.nationalNumber.replace(/\D/g, '').replace(/^0+/, '');
+    return `${this.countryCode}${national}`;
+  }
+
   async sendCode(): Promise<void> {
+    const phone = this.toE164();
+    if (!/^\+[1-9]\d{6,14}$/.test(phone)) {
+      this.error.set('Enter a valid phone number (digits only).');
+      return;
+    }
     this.error.set(null);
     this.busy.set(true);
     try {
-      await this.auth.requestOtp(this.phone.trim(), this.channel());
+      await this.auth.requestOtp(phone, this.channel());
+      this.submittedPhone = phone;
       this.step.set('code');
     } catch {
       this.error.set('Could not send a code. Check the number and try again.');
@@ -204,7 +239,7 @@ export class LandingComponent {
     this.error.set(null);
     this.busy.set(true);
     try {
-      await this.auth.verifyOtp(this.phone.trim(), this.code.trim());
+      await this.auth.verifyOtp(this.submittedPhone, this.code.trim());
       await this.router.navigate(['/coming-soon']);
     } catch {
       this.error.set('That code did not work. Try again.');

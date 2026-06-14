@@ -14,3 +14,12 @@ export class OtpThrottledError extends HttpException {
     );
   }
 }
+
+export class OtpSendError extends HttpException {
+  constructor() {
+    super(
+      "Couldn't send a code to that number — check it and try again.",
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+}
