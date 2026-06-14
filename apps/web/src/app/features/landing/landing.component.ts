@@ -47,6 +47,7 @@ type Step = 'phone' | 'code';
               </select>
               <input id="phone" name="phone" [(ngModel)]="nationalNumber" placeholder="54 595 3217" inputmode="tel" autocomplete="tel" />
             </div>
+            @if (nationalNumber) { <p class="preview">📲 Code will be sent to <strong>{{ e164Preview }}</strong></p> }
             <button class="primary" [disabled]="busy() || !nationalNumber" (click)="sendCode()">
               {{ busy() ? 'Sending…' : 'Log in' }}
             </button>
@@ -142,6 +143,7 @@ type Step = 'phone' | 'code';
       .phone-row { display: flex; gap: 8px; }
       .phone-row select { border: 1px solid #e3ddd2; border-radius: 12px; padding: 0 8px; font-size: 15px; background: #fff; color: #1d1b16; cursor: pointer; }
       .phone-row input { flex: 1; min-width: 0; }
+      .preview { margin: 2px 0 0; font-size: 13px; color: #6b6457; }
       .seg { display: flex; background: #f1ece3; border-radius: 12px; padding: 4px; gap: 4px; }
       .seg button { flex: 1; padding: 9px; border: 0; border-radius: 9px; background: transparent; color: #6b6457; font-weight: 600; cursor: pointer; font-size: 14px; }
       .seg button.active { background: #fff; color: var(--gusto); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
@@ -214,6 +216,11 @@ export class LandingComponent {
   private toE164(): string {
     const national = this.nationalNumber.replace(/\D/g, '').replace(/^0+/, '');
     return `${this.countryCode}${national}`;
+  }
+
+  /** Live preview of the exact E.164 number that will be sent to Twilio. */
+  get e164Preview(): string {
+    return this.toE164();
   }
 
   async sendCode(): Promise<void> {
