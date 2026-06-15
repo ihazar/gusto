@@ -13,16 +13,16 @@ import { HealthController } from './health/health.controller';
 // API routes live under /api and are excluded from the static/SPA fallback.
 const webDist = join(process.cwd(), '..', 'web', 'dist');
 const staticImports = existsSync(join(webDist, 'index.html'))
-  ? [ServeStaticModule.forRoot({ rootPath: webDist, exclude: ['/api', '/api/(.*)'] })]
-  : [];
+    ? [ServeStaticModule.forRoot({ rootPath: webDist, exclude: ['/api', '/api/(.*)'] })]
+    : [];
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
-    ...staticImports,
-    PrismaModule,
-    AuthModule,
-  ],
-  controllers: [HealthController, MeController],
+    imports: [
+        ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+        ...staticImports,
+        PrismaModule,
+        AuthModule,
+    ],
+    controllers: [HealthController, MeController],
 })
 export class AppModule {}

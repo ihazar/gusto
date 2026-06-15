@@ -1,0 +1,8 @@
+node_modules
+**/dist
+**/.angular
+**/.nx
+**/coverage
+package-lock.json
+**/*.min.js
+apps/api/prisma/migrations

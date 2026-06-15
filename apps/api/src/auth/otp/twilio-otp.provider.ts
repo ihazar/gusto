@@ -14,37 +14,35 @@ import { AppConfig } from '../../config/configuration';
  */
 @Injectable()
 export class TwilioOtpProvider implements OtpProvider {
-  private readonly logger = new Logger(TwilioOtpProvider.name);
-  private readonly cfg: AppConfig['twilio'];
-  private clientRef: Twilio | null = null;
+    private readonly logger = new Logger(TwilioOtpProvider.name);
+    private readonly cfg: AppConfig['twilio'];
+    private clientRef: Twilio | null = null;
 
-  constructor(config: ConfigService<{ twilio: AppConfig['twilio'] }, true>) {
-    this.cfg = config.get('twilio', { infer: true });
-  }
-
-  private get client(): Twilio {
-    if (!this.clientRef) {
-      this.clientRef = twilio(this.cfg.accountSid, this.cfg.authToken);
+    constructor(config: ConfigService<{ twilio: AppConfig['twilio'] }, true>) {
+        this.cfg = config.get('twilio', { infer: true });
     }
-    return this.clientRef;
-  }
 
-  async sendCode(phone: string, channel: OtpChannel = 'sms'): Promise<void> {
-    await this.client.verify.v2
-      .services(this.cfg.verifyServiceSid)
-      .verifications.create({ to: phone, channel });
-  }
-
-  async verifyCode(phone: string, code: string): Promise<boolean> {
-    try {
-      const check = await this.client.verify.v2
-        .services(this.cfg.verifyServiceSid)
-        .verificationChecks.create({ to: phone, code });
-      return check.status === 'approved';
-    } catch (err) {
-      // Twilio 404s once a verification is consumed/expired — treat as failure.
-      this.logger.debug(`verifyCode failed for ${phone}: ${(err as Error).message}`);
-      return false;
+    private get client(): Twilio {
+        if (!this.clientRef) {
+            this.clientRef = twilio(this.cfg.accountSid, this.cfg.authToken);
+        }
+        return this.clientRef;
     }
-  }
+
+    async sendCode(phone: string, channel: OtpChannel = 'sms'): Promise<void> {
+        await this.client.verify.v2.services(this.cfg.verifyServiceSid).verifications.create({ to: phone, channel });
+    }
+
+    async verifyCode(phone: string, code: string): Promise<boolean> {
+        try {
+            const check = await this.client.verify.v2
+                .services(this.cfg.verifyServiceSid)
+                .verificationChecks.create({ to: phone, code });
+            return check.status === 'approved';
+        } catch (err) {
+            // Twilio 404s once a verification is consumed/expired — treat as failure.
+            this.logger.debug(`verifyCode failed for ${phone}: ${(err as Error).message}`);
+            return false;
+        }
+    }
 }

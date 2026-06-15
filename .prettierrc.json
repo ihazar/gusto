@@ -1,0 +1,14 @@
+{
+    "printWidth": 120,
+    "tabWidth": 4,
+    "useTabs": false,
+    "singleQuote": true,
+    "plugins": ["@prettier/plugin-xml"],
+    "xmlWhitespaceSensitivity": "ignore",
+    "overrides": [
+        {
+            "files": ["*.yaml", "*.yml"],
+            "options": { "tabWidth": 2 }
+        }
+    ]
+}

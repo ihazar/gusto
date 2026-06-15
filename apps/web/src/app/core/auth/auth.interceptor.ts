@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 
 /** Attaches the bearer access token to API requests. */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const token = inject(AuthService).accessToken();
-  if (!token) return next(req);
-  return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
+    const token = inject(AuthService).accessToken();
+    if (!token) return next(req);
+    return next(req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
 };

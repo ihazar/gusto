@@ -28,8 +28,9 @@ the React Native mobile app, sharing a single contracts library.
 ```
 
 **Client split (deliberate):**
-- **React Native (Expo)** = the *customer* app: browse, order, track, pay. Optionally a chef-lite view.
-- **Angular** = the *chef portal* (onboarding, menu, order queue) **and** the *admin/ops console* (approvals, disputes, payouts). Two routed sections behind role-based guards, one Angular app — or two apps if they diverge.
+
+-   **React Native (Expo)** = the _customer_ app: browse, order, track, pay. Optionally a chef-lite view.
+-   **Angular** = the _chef portal_ (onboarding, menu, order queue) **and** the _admin/ops console_ (approvals, disputes, payouts). Two routed sections behind role-based guards, one Angular app — or two apps if they diverge.
 
 Rationale: customers are mobile-first; chefs manage a kitchen at a counter/desktop and ops are internal — both are far better on web.
 
@@ -64,19 +65,19 @@ types and validation schemas, so a backend change that breaks a client fails at 
 
 ## 3. Tech stack & key decisions
 
-| Concern            | Choice                                  | Why |
-|--------------------|-----------------------------------------|-----|
-| API framework      | **NestJS**                              | Modular DI, guards/interceptors map cleanly to auth + RBAC |
-| Database           | **PostgreSQL** + **Prisma**             | Relational marketplace data; Prisma migrations + type-safety |
-| Cache / queue / OTP| **Redis** + **BullMQ**                  | OTP storage w/ TTL, rate limiting, async jobs, timers |
-| Auth               | **Phone OTP (passwordless 2FA)** + JWT  | See §5 |
-| SMS / OTP delivery | **Twilio Verify**                       | Handles code generation, delivery, retries, fraud signals |
-| Payments           | **Stripe** PaymentIntents + **Connect** | Auth/capture flow + per-chef payouts with Stripe-handled KYC |
-| File storage       | **S3-compatible** (AWS S3 / MinIO local)| Kitchen photos, ID docs, certificates |
-| Push               | **Expo Push** (wraps FCM + APNs)        | Simplest path with Expo-managed RN |
-| Realtime           | **Socket.IO gateway** in Nest           | Live order-status to customer + chef |
-| Maps / geo         | **Mapbox or Google Maps**               | Geocoding, distance/ETA, delivery radius |
-| Local dev          | **docker-compose**                      | Postgres + Redis + MinIO in one command |
+| Concern             | Choice                                   | Why                                                          |
+| ------------------- | ---------------------------------------- | ------------------------------------------------------------ |
+| API framework       | **NestJS**                               | Modular DI, guards/interceptors map cleanly to auth + RBAC   |
+| Database            | **PostgreSQL** + **Prisma**              | Relational marketplace data; Prisma migrations + type-safety |
+| Cache / queue / OTP | **Redis** + **BullMQ**                   | OTP storage w/ TTL, rate limiting, async jobs, timers        |
+| Auth                | **Phone OTP (passwordless 2FA)** + JWT   | See §5                                                       |
+| SMS / OTP delivery  | **Twilio Verify**                        | Handles code generation, delivery, retries, fraud signals    |
+| Payments            | **Stripe** PaymentIntents + **Connect**  | Auth/capture flow + per-chef payouts with Stripe-handled KYC |
+| File storage        | **S3-compatible** (AWS S3 / MinIO local) | Kitchen photos, ID docs, certificates                        |
+| Push                | **Expo Push** (wraps FCM + APNs)         | Simplest path with Expo-managed RN                           |
+| Realtime            | **Socket.IO gateway** in Nest            | Live order-status to customer + chef                         |
+| Maps / geo          | **Mapbox or Google Maps**                | Geocoding, distance/ETA, delivery radius                     |
+| Local dev           | **docker-compose**                       | Postgres + Redis + MinIO in one command                      |
 
 ---
 
@@ -154,6 +155,7 @@ DRAFT ──submit profile──▶ SUBMITTED ──auto/manual──▶ UNDER_R
 ```
 
 Steps the chef completes (each saved incrementally so they can resume):
+
 1. **Identity** — already phone-verified; add legal name + ID document upload.
 2. **Kitchen** — address (geocoded), photos, food-hygiene/safety certificate, optional insurance.
 3. **Menu** — at least one dish (name, photo, price, prep time) + availability windows & capacity.
@@ -181,12 +183,13 @@ Order state machine:
 ```
 
 Mechanics:
-- **Capacity check** at checkout against the kitchen's availability window `maxOrders`.
-- **Payment**: authorize at order time, **capture on DELIVERED** — so cancellations release funds cleanly.
-- **Chef accept timer**: a BullMQ delayed job auto-cancels + refunds if the chef doesn't respond in N minutes.
-- **Realtime**: Socket.IO pushes every state change to the customer (tracking screen) and the chef (order queue); push notifications mirror key transitions.
-- **Payouts**: on capture, a Payout job transfers the chef's share (minus platform fee) via Stripe Connect.
-- **Delivery (MVP)**: chef self-delivery or a manually assigned courier; pluggable for a 3rd-party logistics integration later.
+
+-   **Capacity check** at checkout against the kitchen's availability window `maxOrders`.
+-   **Payment**: authorize at order time, **capture on DELIVERED** — so cancellations release funds cleanly.
+-   **Chef accept timer**: a BullMQ delayed job auto-cancels + refunds if the chef doesn't respond in N minutes.
+-   **Realtime**: Socket.IO pushes every state change to the customer (tracking screen) and the chef (order queue); push notifications mirror key transitions.
+-   **Payouts**: on capture, a Payout job transfers the chef's share (minus platform fee) via Stripe Connect.
+-   **Delivery (MVP)**: chef self-delivery or a manually assigned courier; pluggable for a 3rd-party logistics integration later.
 
 BullMQ jobs: send OTP/SMS, send push/notifications, order-accept timeout, payment capture,
 payout settlement, review reminder.
@@ -215,18 +218,18 @@ REST + OpenAPI (Nest `@nestjs/swagger`); the spec generates `libs/api-client` so
 
 ## 9. Delivery roadmap
 
-- **Phase 0 — Foundations.** Nx scaffold, pnpm, CI (`nx affected`), docker-compose, `contracts` lib, Prisma schema + migrations, **phone-OTP auth end-to-end** (API + a login screen on both clients).
-- **Phase 1 — Chef onboarding.** Onboarding state machine, document/photo uploads to S3, Stripe Connect account creation, admin review console in Angular.
-- **Phase 2 — Catalog & ordering.** Menu/availability management, geo-based kitchen discovery on mobile, single-kitchen cart, checkout with Stripe PaymentIntent (auth).
-- **Phase 3 — Order lifecycle.** Order state machine, chef order queue, accept/reject + auto-cancel timer, realtime tracking, push notifications, capture-on-delivery + payouts.
-- **Phase 4 — Trust & polish.** Reviews/ratings, dispute/refund tooling, search & discovery ranking, delivery/courier integration, analytics dashboards.
+-   **Phase 0 — Foundations.** Nx scaffold, pnpm, CI (`nx affected`), docker-compose, `contracts` lib, Prisma schema + migrations, **phone-OTP auth end-to-end** (API + a login screen on both clients).
+-   **Phase 1 — Chef onboarding.** Onboarding state machine, document/photo uploads to S3, Stripe Connect account creation, admin review console in Angular.
+-   **Phase 2 — Catalog & ordering.** Menu/availability management, geo-based kitchen discovery on mobile, single-kitchen cart, checkout with Stripe PaymentIntent (auth).
+-   **Phase 3 — Order lifecycle.** Order state machine, chef order queue, accept/reject + auto-cancel timer, realtime tracking, push notifications, capture-on-delivery + payouts.
+-   **Phase 4 — Trust & polish.** Reviews/ratings, dispute/refund tooling, search & discovery ranking, delivery/courier integration, analytics dashboards.
 
 ---
 
 ## 10. Cross-cutting
 
-- **Security**: phone-enumeration-safe auth, RBAC guards, rate limiting (Redis), signed S3 upload URLs, Stripe webhook signature verification, secrets via env/secret manager, PII minimization on logs.
-- **Testing**: Jest unit (Nest + libs), Playwright e2e (Angular), Detox/Maestro (RN), contract tests against `libs/contracts`.
-- **Observability**: structured logging (pino), request tracing, Sentry on all three apps, health/readiness probes.
-- **Config**: 12-factor env per app; `.env` locally, secret manager in prod.
-- **Deploy**: API as a container (Fly/Render/ECS), Angular static to CDN, mobile via Expo EAS to App Store / Play.
+-   **Security**: phone-enumeration-safe auth, RBAC guards, rate limiting (Redis), signed S3 upload URLs, Stripe webhook signature verification, secrets via env/secret manager, PII minimization on logs.
+-   **Testing**: Jest unit (Nest + libs), Playwright e2e (Angular), Detox/Maestro (RN), contract tests against `libs/contracts`.
+-   **Observability**: structured logging (pino), request tracing, Sentry on all three apps, health/readiness probes.
+-   **Config**: 12-factor env per app; `.env` locally, secret manager in prod.
+-   **Deploy**: API as a container (Fly/Render/ECS), Angular static to CDN, mobile via Expo EAS to App Store / Play.

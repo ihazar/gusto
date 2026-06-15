@@ -6,8 +6,8 @@ import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 @Controller('me')
 @UseGuards(JwtAuthGuard)
 export class MeController {
-  @Get()
-  getProfile(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
-    return user;
-  }
+    @Get()
+    getProfile(@CurrentUser() user: AuthenticatedUser): AuthenticatedUser {
+        return user;
+    }
 }

@@ -1,26 +1,26 @@
 {
-  "name": "@gusto/mobile",
-  "version": "0.0.0",
-  "private": true,
-  "main": "index.ts",
-  "scripts": {
-    "start": "expo start --port 5002",
-    "android": "expo start --port 5002 --android",
-    "ios": "expo start --port 5002 --ios",
-    "test": "echo \"add jest-expo\" && exit 0",
-    "lint": "echo \"lint placeholder\" && exit 0"
-  },
-  "dependencies": {
-    "@gusto/contracts": "*",
-    "expo": "~51.0.0",
-    "expo-secure-store": "~13.0.2",
-    "expo-status-bar": "~1.12.1",
-    "react": "18.2.0",
-    "react-native": "0.74.5"
-  },
-  "devDependencies": {
-    "@babel/core": "7.25.2",
-    "@types/react": "18.2.79",
-    "typescript": "5.5.4"
-  }
+    "name": "@gusto/mobile",
+    "version": "0.0.0",
+    "private": true,
+    "main": "index.ts",
+    "scripts": {
+        "start": "expo start --port 5002",
+        "android": "expo start --port 5002 --android",
+        "ios": "expo start --port 5002 --ios",
+        "test": "echo \"add jest-expo\" && exit 0",
+        "lint": "echo \"lint placeholder\" && exit 0"
+    },
+    "dependencies": {
+        "@gusto/contracts": "*",
+        "expo": "~51.0.0",
+        "expo-secure-store": "~13.0.2",
+        "expo-status-bar": "~1.12.1",
+        "react": "18.2.0",
+        "react-native": "0.74.5"
+    },
+    "devDependencies": {
+        "@babel/core": "7.25.2",
+        "@types/react": "18.2.79",
+        "typescript": "5.5.4"
+    }
 }

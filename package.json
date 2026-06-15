@@ -1,32 +1,38 @@
 {
-  "name": "gusto",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Gusto — home-chefs food delivery platform (NestJS API + Angular web + React Native mobile)",
-  "workspaces": [
-    "libs/*",
-    "apps/*"
-  ],
-  "scripts": {
-    "api:dev": "npm run start:dev -w apps/api",
-    "api:build": "npm run build -w apps/api",
-    "api:test": "npm run test -w apps/api",
-    "contracts:build": "npm run build -w libs/contracts",
-    "start": "npm run -w apps/api start",
-    "heroku-postbuild": "npm run contracts:build && npm run -w apps/api prisma:generate && npm run -w apps/web build && npm run -w apps/api build",
-    "web:dev": "npm run start -w apps/web",
-    "mobile:dev": "npm run start -w apps/mobile",
-    "infra:up": "docker compose up -d",
-    "infra:down": "docker compose down",
-    "lint": "nx run-many -t lint",
-    "test": "nx run-many -t test",
-    "build": "nx run-many -t build"
-  },
-  "devDependencies": {
-    "nx": "19.8.4",
-    "typescript": "5.5.4"
-  },
-  "engines": {
-    "node": "22.x"
-  }
+    "name": "gusto",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Gusto — home-chefs food delivery platform (NestJS API + Angular web + React Native mobile)",
+    "workspaces": [
+        "libs/*",
+        "apps/*"
+    ],
+    "scripts": {
+        "api:dev": "npm run start:dev -w apps/api",
+        "api:build": "npm run build -w apps/api",
+        "api:test": "npm run test -w apps/api",
+        "contracts:build": "npm run build -w libs/contracts",
+        "start": "npm run -w apps/api start",
+        "heroku-postbuild": "npm run contracts:build && npm run -w apps/api prisma:generate && npm run -w apps/web build && npm run -w apps/api build",
+        "web:dev": "npm run start -w apps/web",
+        "mobile:dev": "npm run start -w apps/mobile",
+        "infra:up": "docker compose up -d",
+        "infra:down": "docker compose down",
+        "lint": "eslint .",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "test": "nx run-many -t test",
+        "build": "nx run-many -t build"
+    },
+    "devDependencies": {
+        "@prettier/plugin-xml": "3.4.1",
+        "eslint": "9.11.1",
+        "nx": "19.8.4",
+        "prettier": "3.3.3",
+        "typescript": "5.5.4",
+        "typescript-eslint": "8.8.0"
+    },
+    "engines": {
+        "node": "22.x"
+    }
 }
