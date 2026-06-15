@@ -39,8 +39,6 @@ export class MockOtpProvider implements OtpProvider {
   }
 
   async verifyCode(phone: string, code: string): Promise<boolean> {
-    // Configurable test/demo bypass code (works in any environment).
-    if (this.cfg.testCode && code === this.cfg.testCode) return true;
     if (!this.isProd && code === '000000') return true;
 
     const challenge = this.challenges.get(phone);

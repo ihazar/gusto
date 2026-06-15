@@ -13,8 +13,10 @@ export interface AppConfig {
     maxAttempts: number;
     requestWindow: number;
     maxRequestsPerWindow: number;
-    /** When set, the mock provider accepts this code in any environment (test/demo). */
+    /** Fixed code accepted for allowlisted test phones, bypassing the provider. */
     testCode: string;
+    /** E.164 numbers allowed to log in with testCode (bypass Twilio). */
+    testPhones: string[];
   };
   twilio: {
     accountSid: string;
@@ -46,6 +48,10 @@ export default (): AppConfig => ({
     requestWindow: num(process.env.OTP_REQUEST_WINDOW, 3600),
     maxRequestsPerWindow: num(process.env.OTP_MAX_REQUESTS_PER_WINDOW, 5),
     testCode: process.env.OTP_TEST_CODE ?? '',
+    testPhones: (process.env.OTP_TEST_PHONES ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
   },
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID ?? '',

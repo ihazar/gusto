@@ -110,6 +110,9 @@ const jwtConfig = {
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fakeConfig = { get: () => jwtConfig } as any as ConfigService<any, true>;
+const authConfig = {
+  get: () => ({ testCode: '', testPhones: [] as string[] }),
+} as any as ConfigService<any, true>;
 
 const device: DeviceInfo = { deviceId: 'dev-1', platform: DevicePlatform.IOS };
 
@@ -118,7 +121,7 @@ function build() {
   const users = new FakeUsers();
   const refreshTokens = new FakeRefreshTokens();
   const tokens = new TokenService(fakeConfig, refreshTokens, users);
-  const auth = new AuthService(otp, new FakeRateLimiter(3), users, tokens);
+  const auth = new AuthService(otp, new FakeRateLimiter(3), users, tokens, authConfig);
   return { auth, tokens, otp, users, refreshTokens };
 }
 
