@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { AuthTokens, AuthUser } from '@gusto/contracts';
+import { AuthTokens, AuthUser, OtpChannel } from '@gusto/contracts';
 import { api } from '../api/client';
 
 interface AuthState {
     user: AuthUser | null;
     loading: boolean;
-    requestOtp: (phone: string) => Promise<void>;
+    requestOtp: (phone: string, channel: OtpChannel) => Promise<void>;
     verifyOtp: (phone: string, code: string) => Promise<void>;
     signOut: () => Promise<void>;
 }
@@ -49,8 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         () => ({
             user: session?.user ?? null,
             loading,
-            requestOtp: async (phone) => {
-                await api.requestOtp(phone);
+            requestOtp: async (phone, channel) => {
+                await api.requestOtp(phone, channel);
             },
             verifyOtp: async (phone, code) => {
                 const deviceId = await getDeviceId();

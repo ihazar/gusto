@@ -9,7 +9,7 @@
         "ios": { "supportsTablet": true, "bundleIdentifier": "com.gusto.app" },
         "android": { "package": "com.gusto.app" },
         "extra": {
-            "apiUrl": "http://localhost:5000/api"
+            "apiUrl": "https://gustochefs.com/api"
         }
     }
 }
