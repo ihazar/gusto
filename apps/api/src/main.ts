@@ -23,7 +23,7 @@ async function bootstrap(): Promise<void> {
     app.setGlobalPrefix('api');
 
     const config = app.get(ConfigService);
-    const port = config.get<number>('port', 5000);
+    const port = config.get<number>('port', 5007);
 
     await app.listen(port);
     Logger.log(`Gusto API listening on http://localhost:${port}/api`, 'Bootstrap');

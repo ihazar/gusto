@@ -4,13 +4,20 @@ Home-chefs food delivery platform. One monorepo, three apps, one shared contract
 
 | Path             | What                                       | Stack                      | Local port |
 | ---------------- | ------------------------------------------ | -------------------------- | ---------- |
-| `apps/api`       | Backend API (auth, chefs, orders)          | NestJS + Prisma + Postgres | **5000**   |
 | `apps/web`       | Chef & ops portal                          | Angular 18 (standalone)    | **5001**   |
 | `apps/mobile`    | Customer app                               | React Native (Expo)        | **5002**   |
+| `apps/api`       | Backend API (auth, chefs, orders)          | NestJS + Prisma + Postgres | **5007**   |
 | `libs/contracts` | Shared DTOs, enums, zod schemas, API types | TypeScript + zod           | –          |
 
 Infra (Docker): Postgres **5003**, Redis **5004**, MinIO API **5005** / console **5006**.
-All ports live in the 5000–5006 block to avoid clashing with other local projects.
+All ports live in the **5001–5007** block to avoid clashing with other local projects.
+
+> **Why no port 5000?** On macOS, the **AirPlay Receiver** (Control Center) binds
+> `localhost:5000` and answers every request with `403 Forbidden`, which silently
+> breaks a dev server bound there. Rather than ask everyone to disable that system
+> service, Gusto skips 5000 entirely and starts the block at 5001. The API therefore
+> runs on **5007**. (You _can_ free 5000 via System Settings → General → AirDrop &
+> Handoff → AirPlay Receiver, but you don't need to.)
 
 See [PLAN.md](./PLAN.md) for the full architecture and roadmap. This repo currently
 implements **Phase 0**: monorepo scaffold + **phone-OTP 2FA auth end-to-end**.
@@ -42,13 +49,13 @@ npm run -w apps/api prisma:migrate -- --name init
 
 ## Run the apps (each in its own terminal)
 
-### API — http://localhost:5000/api
+### API — http://localhost:5007/api
 
 ```bash
 npm run api:dev
 ```
 
-Health check: `curl localhost:5000/api/health` → `{"status":"ok"}`.
+Health check: `curl localhost:5007/api/health` → `{"status":"ok"}`.
 
 ### Web (Angular chef/ops portal) — http://localhost:5001
 
@@ -57,7 +64,7 @@ npm run web:dev
 ```
 
 Open http://localhost:5001 — it redirects to `/login`. The web app calls the API at
-`http://localhost:5000/api` (configured in `apps/web/src/environments/environment.ts`),
+`http://localhost:5007/api` (configured in `apps/web/src/environments/environment.ts`),
 so **start the API first** for login to work.
 
 ### Mobile (Expo customer app) — dev server on port 5002
@@ -78,22 +85,22 @@ So on any login screen, enter an E.164 number like `+14155552671`, then `000000`
 Hit it directly with curl:
 
 ```bash
-curl -X POST localhost:5000/api/auth/otp/request \
+curl -X POST localhost:5007/api/auth/otp/request \
   -H 'content-type: application/json' -d '{"phone":"+14155552671"}'
 
-curl -X POST localhost:5000/api/auth/otp/verify \
+curl -X POST localhost:5007/api/auth/otp/verify \
   -H 'content-type: application/json' \
   -d '{"phone":"+14155552671","code":"000000"}'
 # -> { user, tokens: { accessToken, refreshToken, expiresIn } }
 
-curl localhost:5000/api/me -H "authorization: Bearer <accessToken>"
+curl localhost:5007/api/me -H "authorization: Bearer <accessToken>"
 ```
 
 ## Notes
 
 -   **Expo on a physical phone:** `localhost` points at the phone, not your Mac. Set
     `apps/mobile/app.json` → `expo.extra.apiUrl` to your Mac's LAN IP, e.g.
-    `http://192.168.1.50:5000/api`. The iOS simulator and Android emulator work with
+    `http://192.168.1.50:5007/api`. The iOS simulator and Android emulator work with
     `localhost` as-is.
 -   **Stop / reset infra:** `npm run infra:down` (add `docker compose down -v` to wipe DB volumes).
 -   **Changing a port:** API → `API_PORT` in `apps/api/.env`; web → `angular.json`
