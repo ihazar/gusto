@@ -26,11 +26,17 @@ type Step = 'phone' | 'code';
                         <li>🔒 Secure phone login — SMS or WhatsApp</li>
                         <li>🛵 Fresh from their kitchen to your door</li>
                     </ul>
+                    <button class="chef-link" type="button" (click)="becomeAChef()">
+                        👩‍🍳 Are you a home-cook? <strong>Become a chef →</strong>
+                    </button>
                 </div>
 
-                <div class="card">
+                <div class="card" id="login-card">
+                    @if (chefIntent()) {
+                        <p class="chef-note">👩‍🍳 Logging in to <strong>become a chef</strong></p>
+                    }
                     @if (step() === 'phone') {
-                        <h2>Log in</h2>
+                        <h2>{{ chefIntent() ? 'Log in to start cooking' : 'Log in' }}</h2>
                         <p class="sub">We'll send you a one-time code.</p>
                         <div class="seg" role="group" aria-label="Delivery channel">
                             <button type="button" [class.active]="channel() === 'sms'" (click)="channel.set('sms')">
@@ -132,6 +138,14 @@ type Step = 'phone' | 'code';
             <section class="callout">
                 <h3>Made by neighbours, not factories.</h3>
                 <p>Every dish on Gusto comes from a home kitchen down the street — not a ghost kitchen.</p>
+            </section>
+
+            <!-- BECOME A CHEF -->
+            <section class="chef-cta">
+                <span class="chef-emoji">🍳</span>
+                <h3>Cook on Gusto</h3>
+                <p>Turn your kitchen into a business. Share the food you love with neighbours nearby.</p>
+                <button class="cta-btn" type="button" (click)="becomeAChef()">Become a chef</button>
             </section>
 
             <footer class="foot">
@@ -403,6 +417,60 @@ type Step = 'phone' | 'code';
                 font-size: 17px;
             }
 
+            .chef-link {
+                margin-top: 26px;
+                background: #fff;
+                border: 1px solid #ecdfd0;
+                color: #7a4a36;
+                border-radius: 999px;
+                padding: 12px 18px;
+                font-size: 15px;
+                cursor: pointer;
+                box-shadow: 0 6px 16px rgba(120, 60, 30, 0.08);
+            }
+            .chef-link strong {
+                color: var(--gusto);
+            }
+            .chef-note {
+                background: #fff4ee;
+                border: 1px solid #f3d9cc;
+                color: #7a4a36;
+                border-radius: 10px;
+                padding: 8px 12px;
+                font-size: 13px;
+                margin: 0 0 4px;
+            }
+
+            .chef-cta {
+                text-align: center;
+                padding: 8vh 7vw;
+            }
+            .chef-emoji {
+                font-size: 40px;
+            }
+            .chef-cta h3 {
+                font-size: clamp(24px, 3vw, 36px);
+                margin: 10px 0 8px;
+                letter-spacing: -0.5px;
+            }
+            .chef-cta p {
+                margin: 0 auto 22px;
+                color: #6b6457;
+                font-size: 17px;
+                max-width: 460px;
+            }
+            .cta-btn {
+                background: var(--gusto);
+                color: #fff;
+                border: 0;
+                border-radius: 12px;
+                padding: 14px 28px;
+                font-weight: 700;
+                font-size: 16px;
+                cursor: pointer;
+                box-shadow: 0 10px 26px rgba(210, 85, 58, 0.28);
+            }
+
             .foot {
                 display: flex;
                 align-items: center;
@@ -462,6 +530,8 @@ export class LandingComponent {
     channel = signal<OtpChannel>('sms');
     busy = signal(false);
     error = signal<string | null>(null);
+    /** Set when the user arrived via "Become a chef"; sends them to the wizard after login. */
+    chefIntent = signal(false);
     countryCode = '+972';
     nationalNumber = '';
     /** The composed E.164 number actually sent to the API. */
@@ -515,7 +585,7 @@ export class LandingComponent {
         this.busy.set(true);
         try {
             await this.auth.verifyOtp(this.submittedPhone, this.code.trim());
-            await this.router.navigate(['/coming-soon']);
+            await this.router.navigate([this.chefIntent() ? '/chef/onboarding' : '/coming-soon']);
         } catch {
             this.error.set('That code did not work. Try again.');
         } finally {
@@ -527,5 +597,15 @@ export class LandingComponent {
         this.code = '';
         this.error.set(null);
         this.step.set('phone');
+    }
+
+    /** "Become a chef": go straight to the wizard if signed in, else log in first. */
+    becomeAChef(): void {
+        if (this.auth.isAuthenticated()) {
+            void this.router.navigate(['/chef/onboarding']);
+            return;
+        }
+        this.chefIntent.set(true);
+        document.getElementById('login-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 }

@@ -13,7 +13,10 @@ import { AuthService } from '../../core/auth/auth.service';
             <p class="who">
                 Signed in as <strong>{{ auth.user()?.phone }}</strong>
             </p>
-            <button (click)="signOut()">Sign out</button>
+            <div class="cta">
+                <button class="primary" (click)="openChefDashboard()">👩‍🍳 Open chef dashboard</button>
+                <button (click)="signOut()">Sign out</button>
+            </div>
         </main>
     `,
     styles: [
@@ -60,6 +63,12 @@ import { AuthService } from '../../core/auth/auth.service';
                 font-size: 14px;
                 margin-top: 8px;
             }
+            .cta {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
             button {
                 margin-top: 8px;
                 padding: 11px 20px;
@@ -70,12 +79,21 @@ import { AuthService } from '../../core/auth/auth.service';
                 font-weight: 600;
                 cursor: pointer;
             }
+            button.primary {
+                border-color: transparent;
+                background: var(--gusto);
+                color: #fff;
+            }
         `,
     ],
 })
 export class ComingSoonComponent {
     readonly auth = inject(AuthService);
     private readonly router = inject(Router);
+
+    openChefDashboard(): Promise<boolean> {
+        return this.router.navigate(['/chef']);
+    }
 
     async signOut(): Promise<void> {
         await this.auth.logout();
