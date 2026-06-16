@@ -259,7 +259,15 @@ const styles = StyleSheet.create({
         borderColor: '#e3ddd2',
         color: '#1d1b16',
     },
-    otp: { textAlign: 'center', letterSpacing: 10, fontSize: 22, fontWeight: '700' },
+    otp: {
+        flex: 0, // cancel input's flex:1 (this field is in a column, not a row)
+        height: 58,
+        paddingVertical: 0,
+        textAlign: 'center',
+        letterSpacing: 8,
+        fontSize: 24,
+        fontWeight: '700',
+    },
     preview: { fontSize: 13, color: '#6b6457' },
 
     primary: { backgroundColor: '#d2553a', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
