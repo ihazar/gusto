@@ -224,3 +224,25 @@ chef side can onboard and (pretend to) manage a menu, but the marketplace has no
     handling for `עוסק פטור` vs `מורשה`. (M3, legal.)
 -   **Cibus/10bis:** partnership/integration feasibility and timing. (Could pull B2B earlier.)
 -   **Minimum order / delivery zones / radius defaults.** (M3/M5.)
+
+---
+
+## 7. Deferred / parked (consciously skipped, do later)
+
+Built as MVP shortcuts to keep momentum; revisit before launch.
+
+-   **Image upload to S3/MinIO** — photos (selfie, cover, dishes) are still **base64 data
+    URLs** stored inline. Wire signed-URL uploads to MinIO/S3. _(M1 — bucket already in
+    docker-compose.)_
+-   **Hebrew / RTL i18n** — clients are still **English LTR only**; no i18n library yet.
+    Israel-first means this should land early. _(M1 cross-cutting.)_
+-   **Web chef form: kosher + allergens** — the API/Prisma support them, but the Angular
+    add-meal + onboarding forms don't collect them yet (defaulted to `false` / `[]`). _(M1.)_
+-   **Real payments** — `MockPaymentProvider` only **authorizes** (no real money). Integrate an
+    Israeli PSP (Tranzila/Meshulam/Cardcom) + **Bit**, then **Cibus/10bis**, plus compliant
+    **`חשבונית מס`** + VAT. _(M3 cross-cutting.)_
+-   **Visual mobile re-verification** — M2/M3 customer screens (Discover, KitchenDetail cart,
+    Checkout, MyOrders) build + typecheck but were not re-driven in the simulator/emulator after
+    the API was curl-verified. Smoke-test on a device.
+-   **VAT model** — currently applied only to platform fees + delivery (home-food chefs are often
+    `עוסק פטור`). Confirm with the invoicing/tax work. _(M3/legal.)_
