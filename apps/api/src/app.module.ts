@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { ChefModule } from './chef/chef.module';
 import { CatalogModule } from './catalog/catalog.module';
+import { OrdersModule } from './orders/orders.module';
 import { MeController } from './me/me.controller';
 import { HealthController } from './health/health.controller';
 
@@ -26,6 +27,7 @@ const staticImports = existsSync(join(webDist, 'index.html'))
         AuthModule,
         ChefModule,
         CatalogModule,
+        OrdersModule,
     ],
     controllers: [HealthController, MeController],
 })

@@ -6,3 +6,4 @@ export * from './chef/chef.schemas';
 export * from './chef/geo';
 export * from './catalog/catalog.types';
 export * from './catalog/catalog.schemas';
+export * from './orders/orders.schemas';

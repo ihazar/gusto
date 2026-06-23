@@ -12,17 +12,16 @@ import {
 } from '@gusto/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { MENU_INCLUDE, ProfileWithMenu, toChef } from './chef.mapper';
+import { ORDER_INCLUDE, toOrder } from '../orders/orders.mapper';
 
 /**
  * Persists each chef's profile + menu in Postgres (Prisma). A chef profile is
  * created lazily on first access (blank + un-onboarded) so the onboarding
- * wizard has something to fill in. Orders are still demo data in memory — they
- * become real in M3 (cart/checkout).
+ * wizard has something to fill in. The chef's order queue reads real customer
+ * orders (placed via M3 checkout).
  */
 @Injectable()
 export class ChefService {
-    private readonly ordersByUserId = new Map<string, Order[]>();
-
     constructor(private readonly prisma: PrismaService) {}
 
     /** The caller's chef profile, created blank on first access. */
@@ -97,21 +96,25 @@ export class ChefService {
         return this.getForUser(userId);
     }
 
-    /** The caller's orders, seeded on first access (demo until M3). */
-    listOrders(userId: string): Order[] {
-        let orders = this.ordersByUserId.get(userId);
-        if (!orders) {
-            orders = seedOrders();
-            this.ordersByUserId.set(userId, orders);
-        }
-        return orders;
+    /** The caller's incoming orders (newest first). */
+    async listOrders(userId: string): Promise<Order[]> {
+        const profile = await this.prisma.chefProfile.findUnique({ where: { userId }, select: { id: true } });
+        if (!profile) return [];
+        const rows = await this.prisma.order.findMany({
+            where: { chefProfileId: profile.id },
+            orderBy: { placedAt: 'desc' },
+            include: ORDER_INCLUDE,
+        });
+        return rows.map(toOrder);
     }
 
-    /** Move an order to a new status; returns the full list. */
-    updateOrderStatus(userId: string, orderId: string, status: OrderStatus): Order[] {
-        const orders = this.listOrders(userId).map((o) => (o.id === orderId ? { ...o, status } : o));
-        this.ordersByUserId.set(userId, orders);
-        return orders;
+    /** Move one of the chef's orders to a new status; returns the full list. */
+    async updateOrderStatus(userId: string, orderId: string, status: OrderStatus): Promise<Order[]> {
+        const profile = await this.prisma.chefProfile.findUnique({ where: { userId }, select: { id: true } });
+        if (profile) {
+            await this.prisma.order.updateMany({ where: { id: orderId, chefProfileId: profile.id }, data: { status } });
+        }
+        return this.listOrders(userId);
     }
 
     /** Find or lazily create the caller's (blank) chef profile. */
@@ -175,53 +178,4 @@ function dishUpdateData(patch: UpdateMealDto): Prisma.DishUpdateManyMutationInpu
     if (patch.diets !== undefined) data.diets = patch.diets;
     if (patch.allergens !== undefined) data.allergens = patch.allergens;
     return data;
-}
-
-/** Demo orders so the Orders tab has something in each lane (until M3). */
-function seedOrders(): Order[] {
-    return [
-        {
-            id: 'o1',
-            customerName: 'Daniel R.',
-            items: [{ mealId: 'm1', name: 'Slow-cooked lamb hummus', qty: 2, price: 52 }],
-            total: 104,
-            currency: 'ILS',
-            status: OrderStatus.NEW,
-            placedAt: '2026-06-16T11:40:00.000Z',
-            deliveryAddress: '8 Rothschild Blvd, Tel Aviv-Yafo',
-        },
-        {
-            id: 'o2',
-            customerName: 'Noa B.',
-            items: [
-                { mealId: 'm3', name: 'Green shakshuka', qty: 1, price: 39 },
-                { mealId: 'm2', name: 'Roasted aubergine sabich bowl', qty: 1, price: 44 },
-            ],
-            total: 83,
-            currency: 'ILS',
-            status: OrderStatus.IN_PREPARATION,
-            placedAt: '2026-06-16T11:15:00.000Z',
-            deliveryAddress: '22 Dizengoff St, Tel Aviv-Yafo',
-        },
-        {
-            id: 'o3',
-            customerName: 'Yossi K.',
-            items: [{ mealId: 'm3', name: 'Green shakshuka', qty: 3, price: 39 }],
-            total: 117,
-            currency: 'ILS',
-            status: OrderStatus.ON_THE_WAY,
-            placedAt: '2026-06-16T10:50:00.000Z',
-            deliveryAddress: '5 Allenby St, Tel Aviv-Yafo',
-        },
-        {
-            id: 'o4',
-            customerName: 'Maya L.',
-            items: [{ mealId: 'm1', name: 'Slow-cooked lamb hummus', qty: 1, price: 52 }],
-            total: 52,
-            currency: 'ILS',
-            status: OrderStatus.DELIVERED,
-            placedAt: '2026-06-16T09:30:00.000Z',
-            deliveryAddress: '14 Florentin St, Tel Aviv-Yafo',
-        },
-    ];
 }

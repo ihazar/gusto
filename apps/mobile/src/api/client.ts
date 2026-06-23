@@ -3,10 +3,12 @@ import {
     AuthResponse,
     CatalogQuery,
     Chef,
+    CreateOrderDto,
     DevicePlatform,
     KitchenDetail,
     KitchenSummary,
     OnboardingDto,
+    Order,
     OtpChannel,
     RequestOtpResponse,
 } from '@gusto/contracts';
@@ -131,5 +133,10 @@ export const api = {
             send<{ favorited: boolean }>('PUT', `/me/favorites/${chefId}`, accessToken),
         remove: (accessToken: string, chefId: string) =>
             send<{ favorited: boolean }>('DELETE', `/me/favorites/${chefId}`, accessToken),
+    },
+
+    orders: {
+        create: (accessToken: string, dto: CreateOrderDto) => post<Order>('/orders', dto, accessToken),
+        mine: (accessToken: string) => get<Order[]>('/me/orders', accessToken),
     },
 };

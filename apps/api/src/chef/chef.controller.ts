@@ -77,7 +77,7 @@ export class ChefController {
     }
 
     @Get('me/orders')
-    listOrders(@CurrentUser() user: AuthenticatedUser): Order[] {
+    listOrders(@CurrentUser() user: AuthenticatedUser): Promise<Order[]> {
         return this.chefs.listOrders(user.id);
     }
 
@@ -86,7 +86,7 @@ export class ChefController {
         @CurrentUser() user: AuthenticatedUser,
         @Param('orderId') orderId: string,
         @Body(new ZodValidationPipe(updateOrderStatusSchema)) dto: UpdateOrderStatusDto,
-    ): Order[] {
+    ): Promise<Order[]> {
         return this.chefs.updateOrderStatus(user.id, orderId, dto.status);
     }
 }

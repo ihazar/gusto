@@ -49,6 +49,10 @@ export function ComingSoonScreen({ navigation }: Props) {
                     <Text style={styles.primaryText}>🍽️ Browse home-chefs</Text>
                 </Pressable>
 
+                <Pressable style={styles.secondary} onPress={() => navigation.navigate('MyOrders')}>
+                    <Text style={styles.secondaryText}>🧾 My orders</Text>
+                </Pressable>
+
                 {onboarded ? (
                     <Pressable
                         style={styles.secondary}

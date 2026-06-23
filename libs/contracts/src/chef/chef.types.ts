@@ -90,6 +90,26 @@ export enum OrderStatus {
     DELIVERED = 'DELIVERED',
 }
 
+/** Lifecycle of the payment backing an order. */
+export enum PaymentStatus {
+    AUTHORIZED = 'AUTHORIZED',
+    CAPTURED = 'CAPTURED',
+    REFUNDED = 'REFUNDED',
+    FAILED = 'FAILED',
+}
+
+/** Itemized money breakdown shown to the customer at checkout. */
+export interface OrderTotals {
+    subtotal: number;
+    serviceFee: number;
+    deliveryFee: number;
+    tip: number;
+    /** Israeli VAT on fees + delivery. */
+    vat: number;
+    total: number;
+    currency: string;
+}
+
 /** A single line on an order. */
 export interface OrderItem {
     mealId: string;
@@ -111,6 +131,13 @@ export interface Order {
     placedAt: string;
     /** Where it's going. */
     deliveryAddress: string;
+    /** Full money breakdown (present on orders created via checkout). */
+    totals?: OrderTotals;
+    /** State of the payment backing this order. */
+    paymentStatus?: PaymentStatus;
+    /** The kitchen this order is for (customer-facing views). */
+    kitchenId?: string;
+    kitchenName?: string;
 }
 
 /** A home-chef profile, as built during onboarding. */
