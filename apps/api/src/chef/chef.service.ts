@@ -1,7 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { Availability as PAvailability, ChefProfile as PChefProfile, Dish as PDish, Prisma } from '@prisma/client';
 import {
+    Allergen,
     Chef,
     CreateMealDto,
+    Diet,
     Meal,
     OnboardingDto,
     Order,
@@ -10,115 +13,100 @@ import {
     UpdateChefSettingsDto,
     UpdateMealDto,
 } from '@gusto/contracts';
+import { PrismaService } from '../prisma/prisma.service';
+
+type ProfileWithMenu = PChefProfile & { dishes: PDish[]; availability: PAvailability[] };
+
+const MENU_INCLUDE = {
+    dishes: { orderBy: { createdAt: 'asc' } },
+    availability: true,
+} satisfies Prisma.ChefProfileInclude;
 
 /**
- * In-memory chef store for onboarding.
- *
- * Phase 0 of Gusto is auth-only; the chef/menu Prisma models land in a later
- * phase (see prisma/schema.prisma). Until then this keeps each authenticated
- * user's chef profile in memory so the web onboarding flow has a real API to
- * talk to. The public surface matches what a Prisma-backed repository will
- * expose, so swapping the storage out later is a drop-in change.
+ * Persists each chef's profile + menu in Postgres (Prisma). A chef profile is
+ * created lazily on first access (blank + un-onboarded) so the onboarding
+ * wizard has something to fill in. Orders are still demo data in memory — they
+ * become real in M3 (cart/checkout).
  */
 @Injectable()
 export class ChefService {
-    private readonly byUserId = new Map<string, Chef>();
     private readonly ordersByUserId = new Map<string, Order[]>();
-    private seq = 0;
 
-    /** The caller's chef profile, seeded on first access. */
-    getForUser(userId: string): Chef {
-        let chef = this.byUserId.get(userId);
-        if (!chef) {
-            chef = seedChef(userId);
-            this.byUserId.set(userId, chef);
-        }
-        return chef;
+    constructor(private readonly prisma: PrismaService) {}
+
+    /** The caller's chef profile, created blank on first access. */
+    async getForUser(userId: string): Promise<Chef> {
+        return toChef(await this.ensureProfile(userId));
     }
 
     /** Finish the onboarding wizard: fill the profile, add dishes, go live. */
-    completeOnboarding(userId: string, dto: OnboardingDto): Chef {
-        const current = this.getForUser(userId);
-        const meals: Meal[] = dto.meals.map((m) => this.buildMeal(userId, m));
-        const next: Chef = {
-            ...current,
-            name: dto.name,
-            kitchenName: dto.kitchenName,
-            bio: dto.bio,
-            selfieUrl: dto.selfieUrl,
-            timelineUrl: dto.timelineUrl,
-            address: dto.address,
-            location: dto.location,
-            meals,
-            onboarded: true,
-            active: true,
-            acceptingOrders: true,
-        };
-        this.byUserId.set(userId, next);
-        return next;
+    async completeOnboarding(userId: string, dto: OnboardingDto): Promise<Chef> {
+        await this.ensureProfile(userId);
+        const profile = await this.prisma.chefProfile.update({
+            where: { userId },
+            data: {
+                name: dto.name,
+                kitchenName: dto.kitchenName,
+                bio: dto.bio,
+                selfieUrl: dto.selfieUrl,
+                timelineUrl: dto.timelineUrl,
+                ...addressData(dto.address),
+                lat: dto.location.lat,
+                lng: dto.location.lng,
+                onboarded: true,
+                active: true,
+                acceptingOrders: true,
+                dishes: { create: dto.meals.map(dishCreateData) },
+            },
+            include: MENU_INCLUDE,
+        });
+        return toChef(profile);
     }
 
-    /** Patch editable profile fields. Unknown/absent fields are left untouched. */
-    updateProfile(userId: string, patch: UpdateChefProfileDto): Chef {
-        const current = this.getForUser(userId);
-        const next: Chef = {
-            ...current,
-            ...patch,
-            address: patch.address ?? current.address,
-            location: patch.location ?? current.location,
-        };
-        this.byUserId.set(userId, next);
-        return next;
+    /** Patch editable profile fields. Absent fields are left untouched. */
+    async updateProfile(userId: string, patch: UpdateChefProfileDto): Promise<Chef> {
+        await this.ensureProfile(userId);
+        const data: Prisma.ChefProfileUpdateInput = {};
+        if (patch.name !== undefined) data.name = patch.name;
+        if (patch.kitchenName !== undefined) data.kitchenName = patch.kitchenName;
+        if (patch.bio !== undefined) data.bio = patch.bio;
+        if (patch.selfieUrl !== undefined) data.selfieUrl = patch.selfieUrl;
+        if (patch.timelineUrl !== undefined) data.timelineUrl = patch.timelineUrl;
+        if (patch.address) Object.assign(data, addressData(patch.address));
+        if (patch.location) {
+            data.lat = patch.location.lat;
+            data.lng = patch.location.lng;
+        }
+        const profile = await this.prisma.chefProfile.update({ where: { userId }, data, include: MENU_INCLUDE });
+        return toChef(profile);
     }
 
     /** Flip availability toggles (active / accepting orders). */
-    updateSettings(userId: string, patch: UpdateChefSettingsDto): Chef {
-        const current = this.getForUser(userId);
-        const next: Chef = {
-            ...current,
-            active: patch.active ?? current.active,
-            acceptingOrders: patch.acceptingOrders ?? current.acceptingOrders,
-        };
-        this.byUserId.set(userId, next);
-        return next;
+    async updateSettings(userId: string, patch: UpdateChefSettingsDto): Promise<Chef> {
+        await this.ensureProfile(userId);
+        const data: Prisma.ChefProfileUpdateInput = {};
+        if (patch.active !== undefined) data.active = patch.active;
+        if (patch.acceptingOrders !== undefined) data.acceptingOrders = patch.acceptingOrders;
+        const profile = await this.prisma.chefProfile.update({ where: { userId }, data, include: MENU_INCLUDE });
+        return toChef(profile);
     }
 
-    /** Add a meal to the chef's menu; returns the updated profile. */
-    addMeal(userId: string, input: CreateMealDto): Chef {
-        const chef = this.getForUser(userId);
-        const next: Chef = { ...chef, meals: [...chef.meals, this.buildMeal(userId, input)] };
-        this.byUserId.set(userId, next);
-        return next;
-    }
-
-    /** Turn a meal input into a stored Meal with a fresh id and zeroed ratings. */
-    private buildMeal(userId: string, input: CreateMealDto): Meal {
-        return {
-            id: `m_${++this.seq}_${userId.slice(-4)}`,
-            name: input.name,
-            description: input.description,
-            price: input.price,
-            currency: input.currency,
-            diets: input.diets,
-            imageUrl: input.imageUrl,
-            available: input.available,
-            rating: 0,
-            ratingCount: 0,
-        };
+    /** Add a meal to the chef's menu. */
+    async addMeal(userId: string, input: CreateMealDto): Promise<Chef> {
+        const profile = await this.ensureProfile(userId);
+        await this.prisma.dish.create({ data: { chefProfileId: profile.id, ...dishCreateData(input) } });
+        return this.getForUser(userId);
     }
 
     /** Edit a meal (including suspending it via available: false). */
-    updateMeal(userId: string, mealId: string, patch: UpdateMealDto): Chef {
-        const chef = this.getForUser(userId);
-        const next: Chef = {
-            ...chef,
-            meals: chef.meals.map((m) => (m.id === mealId ? { ...m, ...patch } : m)),
-        };
-        this.byUserId.set(userId, next);
-        return next;
+    async updateMeal(userId: string, mealId: string, patch: UpdateMealDto): Promise<Chef> {
+        await this.ensureProfile(userId);
+        // updateMany with a relation filter scopes the edit to this chef's dishes.
+        await this.prisma.dish.updateMany({ where: { id: mealId, chef: { userId } }, data: dishUpdateData(patch) });
+        return this.getForUser(userId);
     }
 
-    /** The caller's orders, seeded on first access. */
+    /** The caller's orders, seeded on first access (demo until M3). */
     listOrders(userId: string): Order[] {
         let orders = this.ordersByUserId.get(userId);
         if (!orders) {
@@ -134,33 +122,122 @@ export class ChefService {
         this.ordersByUserId.set(userId, orders);
         return orders;
     }
+
+    /** Find or lazily create the caller's (blank) chef profile. */
+    private ensureProfile(userId: string): Promise<ProfileWithMenu> {
+        return this.prisma.chefProfile.upsert({
+            where: { userId },
+            create: { userId },
+            update: {},
+            include: MENU_INCLUDE,
+        });
+    }
 }
 
-/**
- * A blank, un-onboarded profile for a brand-new chef. The web app sees
- * `onboarded: false` and sends them through the onboarding wizard, which fills
- * these fields in and flips the flag. Keyed to the caller's user id.
- */
-function seedChef(userId: string): Chef {
+// ── mappers ───────────────────────────────────────────────────────────────
+
+function addressData(a: {
+    line1: string;
+    line2?: string;
+    city: string;
+    region?: string;
+    postalCode?: string;
+    country: string;
+}) {
     return {
-        id: userId,
-        name: '',
-        kitchenName: '',
-        bio: '',
-        // Neutral placeholders so the dashboard isn't broken before photos are set.
-        selfieUrl: 'https://images.unsplash.com/photo-1577219491135-ce391730fb2c?w=400&h=400&fit=crop',
-        timelineUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=1600&h=500&fit=crop',
-        address: { line1: '', city: '', country: 'IL' },
-        location: { lat: 32.0853, lng: 34.7818 },
-        onboarded: false,
-        verified: false,
-        active: false,
-        acceptingOrders: false,
-        meals: [],
+        addressLine1: a.line1,
+        addressLine2: a.line2 ?? null,
+        city: a.city,
+        region: a.region ?? null,
+        postalCode: a.postalCode ?? null,
+        country: a.country,
     };
 }
 
-/** Demo orders so the Orders tab has something in each lane. */
+function dishCreateData(input: CreateMealDto): Prisma.DishCreateWithoutChefInput {
+    return {
+        name: input.name,
+        description: input.description,
+        price: input.price,
+        currency: input.currency,
+        imageUrl: input.imageUrl ?? null,
+        available: input.available,
+        category: input.category ?? null,
+        prepMinutes: input.prepMinutes ?? null,
+        kosher: input.kosher,
+        diets: input.diets,
+        allergens: input.allergens,
+    };
+}
+
+function dishUpdateData(patch: UpdateMealDto): Prisma.DishUpdateManyMutationInput {
+    const data: Prisma.DishUpdateManyMutationInput = {};
+    if (patch.name !== undefined) data.name = patch.name;
+    if (patch.description !== undefined) data.description = patch.description;
+    if (patch.price !== undefined) data.price = patch.price;
+    if (patch.currency !== undefined) data.currency = patch.currency;
+    if (patch.imageUrl !== undefined) data.imageUrl = patch.imageUrl;
+    if (patch.available !== undefined) data.available = patch.available;
+    if (patch.category !== undefined) data.category = patch.category;
+    if (patch.prepMinutes !== undefined) data.prepMinutes = patch.prepMinutes;
+    if (patch.kosher !== undefined) data.kosher = patch.kosher;
+    if (patch.diets !== undefined) data.diets = patch.diets;
+    if (patch.allergens !== undefined) data.allergens = patch.allergens;
+    return data;
+}
+
+function toChef(p: ProfileWithMenu): Chef {
+    return {
+        id: p.id,
+        name: p.name,
+        kitchenName: p.kitchenName,
+        bio: p.bio,
+        selfieUrl: p.selfieUrl,
+        timelineUrl: p.timelineUrl,
+        address: {
+            line1: p.addressLine1,
+            line2: p.addressLine2 ?? undefined,
+            city: p.city,
+            region: p.region ?? undefined,
+            postalCode: p.postalCode ?? undefined,
+            country: p.country,
+        },
+        location: { lat: p.lat, lng: p.lng },
+        onboarded: p.onboarded,
+        verified: p.verified,
+        active: p.active,
+        acceptingOrders: p.acceptingOrders,
+        meals: p.dishes.map(toMeal),
+        availability: p.availability.map((a) => ({
+            id: a.id,
+            weekday: a.weekday,
+            startTime: a.startTime,
+            endTime: a.endTime,
+            maxOrders: a.maxOrders,
+        })),
+    };
+}
+
+function toMeal(d: PDish): Meal {
+    return {
+        id: d.id,
+        name: d.name,
+        description: d.description,
+        rating: d.rating,
+        ratingCount: d.ratingCount,
+        price: d.price,
+        currency: d.currency,
+        diets: d.diets as Diet[],
+        imageUrl: d.imageUrl ?? undefined,
+        available: d.available,
+        category: d.category ?? undefined,
+        prepMinutes: d.prepMinutes ?? undefined,
+        kosher: d.kosher,
+        allergens: d.allergens as Allergen[],
+    };
+}
+
+/** Demo orders so the Orders tab has something in each lane (until M3). */
 function seedOrders(): Order[] {
     return [
         {

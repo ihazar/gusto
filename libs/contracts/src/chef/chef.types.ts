@@ -12,10 +12,35 @@ export enum Diet {
     KOSHER = 'KOSHER',
 }
 
+/** Common allergens a dish may contain, surfaced to customers. */
+export enum Allergen {
+    GLUTEN = 'GLUTEN',
+    DAIRY = 'DAIRY',
+    EGGS = 'EGGS',
+    PEANUTS = 'PEANUTS',
+    TREE_NUTS = 'TREE_NUTS',
+    SOY = 'SOY',
+    FISH = 'FISH',
+    SHELLFISH = 'SHELLFISH',
+    SESAME = 'SESAME',
+}
+
 /** A point on the map, used to compute how far a chef is from a customer. */
 export interface GeoLocation {
     lat: number;
     lng: number;
+}
+
+/** A weekly capacity window during which a kitchen takes orders. */
+export interface Availability {
+    id: string;
+    /** 0 = Sunday … 6 = Saturday. */
+    weekday: number;
+    /** "HH:mm" local time. */
+    startTime: string;
+    endTime: string;
+    /** Max orders the chef will take in this window. */
+    maxOrders: number;
 }
 
 /** Human-readable address for a chef's kitchen. */
@@ -47,6 +72,14 @@ export interface Meal {
     imageUrl?: string;
     /** When false, the meal is suspended and hidden from customers. */
     available: boolean;
+    /** Optional menu section, e.g. "Mains", "Mezze", "Desserts". */
+    category?: string;
+    /** Estimated prep time in minutes. */
+    prepMinutes?: number;
+    /** Whether the dish is kosher. */
+    kosher?: boolean;
+    /** Allergens present in the dish. */
+    allergens?: Allergen[];
 }
 
 /** Lifecycle of a customer order, in the sequence a chef works through it. */
@@ -104,4 +137,6 @@ export interface Chef {
     /** Whether the chef is currently taking new orders. */
     acceptingOrders: boolean;
     meals: Meal[];
+    /** Weekly capacity windows (optional; present once configured). */
+    availability?: Availability[];
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Diet, OrderStatus } from './chef.types';
+import { Allergen, Diet, OrderStatus } from './chef.types';
 
 /** A map pin. Bounds are the valid WGS-84 ranges. */
 export const geoLocationSchema = z.object({
@@ -50,6 +50,10 @@ export const createMealSchema = z.object({
     /** Image URL or a data: URL from an uploaded photo. */
     imageUrl: z.string().min(1).optional(),
     available: z.boolean().default(true),
+    category: z.string().max(60).optional(),
+    prepMinutes: z.number().int().positive().max(1440).optional(),
+    kosher: z.boolean().default(false),
+    allergens: z.array(z.nativeEnum(Allergen)).max(20).default([]),
 });
 
 /** Edit an existing meal, including suspending it (available: false). */

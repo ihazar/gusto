@@ -1,5 +1,5 @@
-// Gusto — Phase 0 schema (auth surface only).
-// Chef/menu/order models arrive in Phases 1-3.
+// Gusto schema.
+// M0: auth. M1: chef profile + menu (below). M2: favorites. M3: orders/payments.
 
 generator client {
   provider = "prisma-client-js"
@@ -32,6 +32,7 @@ model User {
 
   devices       Device[]
   refreshTokens RefreshToken[]
+  chefProfile   ChefProfile?
 }
 
 model Device {
@@ -63,4 +64,81 @@ model RefreshToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ── M1: chef profile + menu ──────────────────────────────────────────────
+
+model ChefProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String @default("")
+  kitchenName String @default("")
+  bio         String @default("")
+  selfieUrl   String @default("")
+  timelineUrl String @default("")
+
+  // address
+  addressLine1 String  @default("")
+  addressLine2 String?
+  city         String  @default("")
+  region       String?
+  postalCode   String?
+  country      String  @default("IL")
+
+  // geocoded kitchen location (for distance to customers)
+  lat Float @default(32.0853)
+  lng Float @default(34.7818)
+
+  onboarded       Boolean @default(false)
+  verified        Boolean @default(false)
+  active          Boolean @default(false)
+  acceptingOrders Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dishes       Dish[]
+  availability Availability[]
+}
+
+model Dish {
+  id            String      @id @default(cuid())
+  chefProfileId String
+  chef          ChefProfile @relation(fields: [chefProfileId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String  @default("")
+  price       Float
+  currency    String  @default("ILS")
+  imageUrl    String?
+  available   Boolean @default(true)
+
+  category    String?
+  prepMinutes Int?
+  kosher      Boolean  @default(false)
+  diets       String[]
+  allergens   String[]
+
+  rating      Float @default(0)
+  ratingCount Int   @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([chefProfileId])
+}
+
+// Weekly capacity windows (e.g. Sun 08:00–14:00, max 10 orders).
+model Availability {
+  id            String      @id @default(cuid())
+  chefProfileId String
+  chef          ChefProfile @relation(fields: [chefProfileId], references: [id], onDelete: Cascade)
+
+  weekday   Int // 0 = Sunday … 6 = Saturday
+  startTime String // "08:00"
+  endTime   String // "14:00"
+  maxOrders Int    @default(10)
+
+  @@index([chefProfileId])
 }

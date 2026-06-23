@@ -31,7 +31,7 @@ export class ChefController {
     constructor(private readonly chefs: ChefService) {}
 
     @Get('me')
-    getMine(@CurrentUser() user: AuthenticatedUser): Chef {
+    getMine(@CurrentUser() user: AuthenticatedUser): Promise<Chef> {
         return this.chefs.getForUser(user.id);
     }
 
@@ -39,7 +39,7 @@ export class ChefController {
     updateProfile(
         @CurrentUser() user: AuthenticatedUser,
         @Body(new ZodValidationPipe(updateChefProfileSchema)) dto: UpdateChefProfileDto,
-    ): Chef {
+    ): Promise<Chef> {
         return this.chefs.updateProfile(user.id, dto);
     }
 
@@ -47,7 +47,7 @@ export class ChefController {
     updateSettings(
         @CurrentUser() user: AuthenticatedUser,
         @Body(new ZodValidationPipe(updateChefSettingsSchema)) dto: UpdateChefSettingsDto,
-    ): Chef {
+    ): Promise<Chef> {
         return this.chefs.updateSettings(user.id, dto);
     }
 
@@ -55,7 +55,7 @@ export class ChefController {
     completeOnboarding(
         @CurrentUser() user: AuthenticatedUser,
         @Body(new ZodValidationPipe(onboardingSchema)) dto: OnboardingDto,
-    ): Chef {
+    ): Promise<Chef> {
         return this.chefs.completeOnboarding(user.id, dto);
     }
 
@@ -63,7 +63,7 @@ export class ChefController {
     addMeal(
         @CurrentUser() user: AuthenticatedUser,
         @Body(new ZodValidationPipe(createMealSchema)) dto: CreateMealDto,
-    ): Chef {
+    ): Promise<Chef> {
         return this.chefs.addMeal(user.id, dto);
     }
 
@@ -72,7 +72,7 @@ export class ChefController {
         @CurrentUser() user: AuthenticatedUser,
         @Param('mealId') mealId: string,
         @Body(new ZodValidationPipe(updateMealSchema)) dto: UpdateMealDto,
-    ): Chef {
+    ): Promise<Chef> {
         return this.chefs.updateMeal(user.id, mealId, dto);
     }
 
