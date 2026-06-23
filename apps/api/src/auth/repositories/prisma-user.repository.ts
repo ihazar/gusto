@@ -25,15 +25,18 @@ export class PrismaUserRepository implements UserRepository {
     }
 
     async upsertDevice(userId: string, device: DeviceInfo): Promise<void> {
+        // deviceId is the primary key, so it's unique across all users. Match on
+        // it directly and (re)assign ownership to whoever is logging in now — the
+        // same physical install can be used by a different account over time.
         await this.prisma.device.upsert({
-            where: { userId_id: { userId, id: device.deviceId } },
+            where: { id: device.deviceId },
             create: {
                 id: device.deviceId,
                 userId,
                 platform: device.platform,
                 pushToken: device.pushToken,
             },
-            update: { pushToken: device.pushToken, lastSeenAt: new Date() },
+            update: { userId, platform: device.platform, pushToken: device.pushToken, lastSeenAt: new Date() },
         });
     }
 

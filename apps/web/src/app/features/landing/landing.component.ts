@@ -61,7 +61,7 @@ type Step = 'phone' | 'code';
                                 id="phone"
                                 name="phone"
                                 [(ngModel)]="nationalNumber"
-                                placeholder="54 595 3217"
+                                placeholder="54-5600700"
                                 inputmode="tel"
                                 autocomplete="tel"
                             />
