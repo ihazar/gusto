@@ -1,5 +1,15 @@
 import Constants from 'expo-constants';
-import { AuthResponse, Chef, DevicePlatform, OnboardingDto, OtpChannel, RequestOtpResponse } from '@gusto/contracts';
+import {
+    AuthResponse,
+    CatalogQuery,
+    Chef,
+    DevicePlatform,
+    KitchenDetail,
+    KitchenSummary,
+    OnboardingDto,
+    OtpChannel,
+    RequestOtpResponse,
+} from '@gusto/contracts';
 import { Platform } from 'react-native';
 
 /** An error carrying the HTTP status, so callers can react to 401 etc. */
@@ -69,6 +79,23 @@ async function get<T>(path: string, accessToken?: string): Promise<T> {
     return (await res.json()) as T;
 }
 
+/** Bodyless PUT/DELETE used by toggles like favorites. */
+async function send<T>(method: 'PUT' | 'DELETE', path: string, accessToken?: string): Promise<T> {
+    const res = await fetch(`${BASE}${path}`, {
+        method,
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+    if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+    return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+}
+
+function qs(params: Record<string, string | number | undefined>): string {
+    const parts = Object.entries(params)
+        .filter(([, v]) => v !== undefined && v !== '')
+        .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`);
+    return parts.length ? `?${parts.join('&')}` : '';
+}
+
 const devicePlatform: DevicePlatform = Platform.OS === 'ios' ? DevicePlatform.IOS : DevicePlatform.ANDROID;
 
 export const api = {
@@ -90,5 +117,19 @@ export const api = {
         me: (accessToken: string) => get<Chef>('/chef/me', accessToken),
         completeOnboarding: (accessToken: string, dto: OnboardingDto) =>
             post<Chef>('/chef/me/onboarding/complete', dto, accessToken),
+    },
+
+    catalog: {
+        list: (query: CatalogQuery, accessToken?: string) =>
+            get<KitchenSummary[]>(`/kitchens${qs(query as Record<string, string | number | undefined>)}`, accessToken),
+        get: (id: string, accessToken?: string) => get<KitchenDetail>(`/kitchens/${id}`, accessToken),
+    },
+
+    favorites: {
+        list: (accessToken: string) => get<KitchenSummary[]>('/me/favorites', accessToken),
+        add: (accessToken: string, chefId: string) =>
+            send<{ favorited: boolean }>('PUT', `/me/favorites/${chefId}`, accessToken),
+        remove: (accessToken: string, chefId: string) =>
+            send<{ favorited: boolean }>('DELETE', `/me/favorites/${chefId}`, accessToken),
     },
 };

@@ -1,11 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { Availability as PAvailability, ChefProfile as PChefProfile, Dish as PDish, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import {
-    Allergen,
     Chef,
     CreateMealDto,
-    Diet,
-    Meal,
     OnboardingDto,
     Order,
     OrderStatus,
@@ -14,13 +11,7 @@ import {
     UpdateMealDto,
 } from '@gusto/contracts';
 import { PrismaService } from '../prisma/prisma.service';
-
-type ProfileWithMenu = PChefProfile & { dishes: PDish[]; availability: PAvailability[] };
-
-const MENU_INCLUDE = {
-    dishes: { orderBy: { createdAt: 'asc' } },
-    availability: true,
-} satisfies Prisma.ChefProfileInclude;
+import { MENU_INCLUDE, ProfileWithMenu, toChef } from './chef.mapper';
 
 /**
  * Persists each chef's profile + menu in Postgres (Prisma). A chef profile is
@@ -184,57 +175,6 @@ function dishUpdateData(patch: UpdateMealDto): Prisma.DishUpdateManyMutationInpu
     if (patch.diets !== undefined) data.diets = patch.diets;
     if (patch.allergens !== undefined) data.allergens = patch.allergens;
     return data;
-}
-
-function toChef(p: ProfileWithMenu): Chef {
-    return {
-        id: p.id,
-        name: p.name,
-        kitchenName: p.kitchenName,
-        bio: p.bio,
-        selfieUrl: p.selfieUrl,
-        timelineUrl: p.timelineUrl,
-        address: {
-            line1: p.addressLine1,
-            line2: p.addressLine2 ?? undefined,
-            city: p.city,
-            region: p.region ?? undefined,
-            postalCode: p.postalCode ?? undefined,
-            country: p.country,
-        },
-        location: { lat: p.lat, lng: p.lng },
-        onboarded: p.onboarded,
-        verified: p.verified,
-        active: p.active,
-        acceptingOrders: p.acceptingOrders,
-        meals: p.dishes.map(toMeal),
-        availability: p.availability.map((a) => ({
-            id: a.id,
-            weekday: a.weekday,
-            startTime: a.startTime,
-            endTime: a.endTime,
-            maxOrders: a.maxOrders,
-        })),
-    };
-}
-
-function toMeal(d: PDish): Meal {
-    return {
-        id: d.id,
-        name: d.name,
-        description: d.description,
-        rating: d.rating,
-        ratingCount: d.ratingCount,
-        price: d.price,
-        currency: d.currency,
-        diets: d.diets as Diet[],
-        imageUrl: d.imageUrl ?? undefined,
-        available: d.available,
-        category: d.category ?? undefined,
-        prepMinutes: d.prepMinutes ?? undefined,
-        kosher: d.kosher,
-        allergens: d.allergens as Allergen[],
-    };
 }
 
 /** Demo orders so the Orders tab has something in each lane (until M3). */

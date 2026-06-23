@@ -1239,6 +1239,8 @@ export class ChefOnboardingComponent {
                 diets: f.diets,
                 imageUrl: f.imageUrl || undefined,
                 available: f.available,
+                kosher: false,
+                allergens: [],
             });
             this.form = this.blankMeal();
         } finally {

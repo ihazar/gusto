@@ -33,6 +33,7 @@ model User {
   devices       Device[]
   refreshTokens RefreshToken[]
   chefProfile   ChefProfile?
+  favorites     Favorite[]
 }
 
 model Device {
@@ -101,6 +102,7 @@ model ChefProfile {
 
   dishes       Dish[]
   availability Availability[]
+  favoritedBy  Favorite[]
 }
 
 model Dish {
@@ -141,4 +143,18 @@ model Availability {
   maxOrders Int    @default(10)
 
   @@index([chefProfileId])
+}
+
+// ── M2: favorites ────────────────────────────────────────────────────────
+
+model Favorite {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chefProfileId String
+  chef          ChefProfile @relation(fields: [chefProfileId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+
+  @@unique([userId, chefProfileId])
+  @@index([userId])
 }

@@ -4,3 +4,5 @@ export * from './auth/auth.types';
 export * from './chef/chef.types';
 export * from './chef/chef.schemas';
 export * from './chef/geo';
+export * from './catalog/catalog.types';
+export * from './catalog/catalog.schemas';

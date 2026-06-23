@@ -133,6 +133,8 @@ export function OnboardingScreen({ navigation }: Props) {
                               diets: dish.diets,
                               imageUrl: dish.imageUrl || undefined,
                               available: true,
+                              kosher: false,
+                              allergens: [],
                           },
                       ]
                     : [];

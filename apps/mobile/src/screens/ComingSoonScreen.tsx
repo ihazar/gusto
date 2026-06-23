@@ -45,13 +45,20 @@ export function ComingSoonScreen({ navigation }: Props) {
                     Signed in as <Text style={styles.phone}>{user?.phone}</Text>
                 </Text>
 
+                <Pressable style={styles.primary} onPress={() => navigation.navigate('Discover')}>
+                    <Text style={styles.primaryText}>🍽️ Browse home-chefs</Text>
+                </Pressable>
+
                 {onboarded ? (
-                    <Pressable style={styles.primary} onPress={() => navigation.navigate('ChefLive', { kitchenName })}>
-                        <Text style={styles.primaryText}>✓ {kitchenName || 'Your kitchen'} is live</Text>
+                    <Pressable
+                        style={styles.secondary}
+                        onPress={() => navigation.navigate('ChefLive', { kitchenName })}
+                    >
+                        <Text style={styles.secondaryText}>✓ {kitchenName || 'Your kitchen'} is live</Text>
                     </Pressable>
                 ) : (
-                    <Pressable style={styles.primary} onPress={() => navigation.navigate('Onboarding')}>
-                        <Text style={styles.primaryText}>👩‍🍳 Become a chef</Text>
+                    <Pressable style={styles.secondary} onPress={() => navigation.navigate('Onboarding')}>
+                        <Text style={styles.secondaryText}>👩‍🍳 Become a chef</Text>
                     </Pressable>
                 )}
 
@@ -81,6 +88,15 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
     },
     primaryText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    secondary: {
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 22,
+        borderWidth: 1,
+        borderColor: '#e3ddd2',
+        backgroundColor: '#fff',
+    },
+    secondaryText: { color: '#7a4a36', fontWeight: '700', fontSize: 15 },
     signOut: {
         paddingVertical: 11,
         paddingHorizontal: 22,

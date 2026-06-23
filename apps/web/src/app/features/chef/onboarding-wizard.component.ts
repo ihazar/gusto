@@ -681,6 +681,8 @@ export class OnboardingWizardComponent {
                               diets: this.dish.diets,
                               imageUrl: this.dish.imageUrl || undefined,
                               available: this.dish.available,
+                              kosher: false,
+                              allergens: [],
                           },
                       ]
                     : [];
