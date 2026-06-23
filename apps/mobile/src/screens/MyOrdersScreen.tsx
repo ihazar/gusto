@@ -12,6 +12,7 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
     [OrderStatus.IN_PREPARATION]: '🍳 In preparation',
     [OrderStatus.ON_THE_WAY]: '🛵 On the way',
     [OrderStatus.DELIVERED]: '✅ Delivered',
+    [OrderStatus.CANCELLED]: '✖️ Cancelled',
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyOrders'>;

@@ -275,6 +275,22 @@ interface MealForm {
                         <section class="tabpanel">
                             <h2 class="section-title">Orders</h2>
                             <p class="section-sub">Track each order from new to delivered.</p>
+                            @if (earnings(); as e) {
+                                <div class="earnings">
+                                    <div>
+                                        <span class="ev">{{ moneyLabel(e.pending, e.currency) }}</span>
+                                        <span class="el">Pending payout</span>
+                                    </div>
+                                    <div>
+                                        <span class="ev">{{ moneyLabel(e.paidOut, e.currency) }}</span>
+                                        <span class="el">Paid out</span>
+                                    </div>
+                                    <div>
+                                        <span class="ev">{{ e.deliveredCount }}</span>
+                                        <span class="el">Delivered</span>
+                                    </div>
+                                </div>
+                            }
                             <div class="board">
                                 @for (lane of lanes; track lane.status) {
                                     <div class="lane">
@@ -298,6 +314,11 @@ interface MealForm {
                                                 @if (nextStatus(order.status); as next) {
                                                     <button class="advance" (click)="advance(order, next)">
                                                         {{ advanceLabel(next) }}
+                                                    </button>
+                                                }
+                                                @if (canReject(order)) {
+                                                    <button class="reject" (click)="reject(order)">
+                                                        Reject &amp; refund
                                                     </button>
                                                 }
                                             </article>
@@ -993,6 +1014,41 @@ interface MealForm {
                 border-radius: 9px;
                 cursor: pointer;
             }
+            .reject {
+                margin-top: 6px;
+                border: 1px solid #e3ddd2;
+                background: #fff;
+                color: #b3261e;
+                font-weight: 600;
+                font-size: 13px;
+                padding: 7px;
+                border-radius: 9px;
+                cursor: pointer;
+            }
+            .earnings {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+            .earnings > div {
+                background: #fff;
+                border: 1px solid #f0e9dd;
+                border-radius: 14px;
+                padding: 14px 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+            }
+            .ev {
+                font-size: 20px;
+                font-weight: 800;
+                color: #1d1b16;
+            }
+            .el {
+                font-size: 13px;
+                color: #8a8275;
+            }
 
             /* SETTINGS */
             .settings {
@@ -1160,6 +1216,7 @@ export class ChefOnboardingComponent {
 
     readonly chef = this.chefService.chef;
     readonly orders = this.chefService.orders;
+    readonly earnings = this.chefService.earnings;
     readonly onboarded = this.chefService.onboarded;
     readonly tab = signal<Tab>('home');
 
@@ -1278,6 +1335,18 @@ export class ChefOnboardingComponent {
 
     advance(order: Order, next: OrderStatus): void {
         void this.chefService.setOrderStatus(order.id, next);
+    }
+
+    canReject(order: Order): boolean {
+        return order.status === OrderStatus.NEW;
+    }
+
+    reject(order: Order): void {
+        void this.chefService.rejectOrder(order.id);
+    }
+
+    moneyLabel(amount: number, currency: string): string {
+        return `${this.symbol(currency)}${amount}`;
     }
 
     // ---- Settings ----

@@ -4,15 +4,12 @@ import {
     Chef,
     CreateMealDto,
     OnboardingDto,
-    Order,
-    OrderStatus,
     UpdateChefProfileDto,
     UpdateChefSettingsDto,
     UpdateMealDto,
 } from '@gusto/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { MENU_INCLUDE, ProfileWithMenu, toChef } from './chef.mapper';
-import { ORDER_INCLUDE, toOrder } from '../orders/orders.mapper';
 
 /**
  * Persists each chef's profile + menu in Postgres (Prisma). A chef profile is
@@ -94,27 +91,6 @@ export class ChefService {
         // updateMany with a relation filter scopes the edit to this chef's dishes.
         await this.prisma.dish.updateMany({ where: { id: mealId, chef: { userId } }, data: dishUpdateData(patch) });
         return this.getForUser(userId);
-    }
-
-    /** The caller's incoming orders (newest first). */
-    async listOrders(userId: string): Promise<Order[]> {
-        const profile = await this.prisma.chefProfile.findUnique({ where: { userId }, select: { id: true } });
-        if (!profile) return [];
-        const rows = await this.prisma.order.findMany({
-            where: { chefProfileId: profile.id },
-            orderBy: { placedAt: 'desc' },
-            include: ORDER_INCLUDE,
-        });
-        return rows.map(toOrder);
-    }
-
-    /** Move one of the chef's orders to a new status; returns the full list. */
-    async updateOrderStatus(userId: string, orderId: string, status: OrderStatus): Promise<Order[]> {
-        const profile = await this.prisma.chefProfile.findUnique({ where: { userId }, select: { id: true } });
-        if (profile) {
-            await this.prisma.order.updateMany({ where: { id: orderId, chefProfileId: profile.id }, data: { status } });
-        }
-        return this.listOrders(userId);
     }
 
     /** Find or lazily create the caller's (blank) chef profile. */

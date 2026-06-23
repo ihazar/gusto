@@ -246,3 +246,7 @@ Built as MVP shortcuts to keep momentum; revisit before launch.
     the API was curl-verified. Smoke-test on a device.
 -   **VAT model** — currently applied only to platform fees + delivery (home-food chefs are often
     `עוסק פטור`). Confirm with the invoicing/tax work. _(M3/legal.)_
+-   **Realtime + push (M4 sub-track)** — order updates are **poll/refresh-on-focus**, not pushed.
+    Add the Socket.IO gateway + Expo push for live order status to customer & chef. The
+    accept-timeout auto-cancel uses an in-process `setInterval` sweep; move to **BullMQ** (Redis)
+    for production durability. _(M4.)_

@@ -105,6 +105,7 @@ model ChefProfile {
   availability Availability[]
   favoritedBy  Favorite[]
   orders       Order[]
+  payouts      Payout[]
 }
 
 model Dish {
@@ -188,6 +189,7 @@ model Order {
 
   items   OrderItem[]
   payment Payment?
+  payout  Payout?
 
   @@index([chefProfileId])
   @@index([customerId])
@@ -215,4 +217,20 @@ model Payment {
   amount      Float
   currency    String
   createdAt   DateTime @default(now())
+}
+
+// Chef's earnings for a delivered order (subtotal − commission). Settlement
+// via Stripe Connect / bank transfer is a later milestone.
+model Payout {
+  id            String      @id @default(cuid())
+  chefProfileId String
+  chef          ChefProfile @relation(fields: [chefProfileId], references: [id], onDelete: Cascade)
+  orderId       String      @unique
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  amount        Float
+  currency      String
+  status        String // PENDING | PAID
+  createdAt     DateTime    @default(now())
+
+  @@index([chefProfileId])
 }

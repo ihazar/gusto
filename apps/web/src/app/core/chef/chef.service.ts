@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
     Chef,
+    ChefEarnings,
     CreateMealDto,
     Diet,
     OnboardingDto,
@@ -111,6 +112,7 @@ export class ChefService {
     }
 
     private readonly ordersState = signal<Order[]>([]);
+    private readonly earningsState = signal<ChefEarnings | null>(null);
     private readonly loadedState = signal(false);
 
     /** The current chef profile. */
@@ -119,6 +121,8 @@ export class ChefService {
     readonly meals = computed(() => this.state().meals);
     /** Customer orders for the Orders tab. */
     readonly orders = computed(() => this.ordersState());
+    /** Chef earnings summary (payouts). */
+    readonly earnings = computed(() => this.earningsState());
     /** True once the first API load has settled (so routing can trust `onboarded`). */
     readonly loaded = computed(() => this.loadedState());
     /** Whether the chef has finished the onboarding wizard. */
@@ -162,14 +166,23 @@ export class ChefService {
         }
     }
 
-    /** Load the chef's orders from the API. */
+    /** Load the chef's orders + earnings from the API. */
     async loadOrders(): Promise<void> {
         try {
-            const orders = await firstValueFrom(this.http.get<Order[]>(`${this.base}/me/orders`));
+            const [orders, earnings] = await Promise.all([
+                firstValueFrom(this.http.get<Order[]>(`${this.base}/me/orders`)),
+                firstValueFrom(this.http.get<ChefEarnings>(`${this.base}/me/earnings`)),
+            ]);
             this.ordersState.set(orders);
+            this.earningsState.set(earnings);
         } catch {
             // offline — leave whatever we have
         }
+    }
+
+    /** Reject a new order (refunds the customer). */
+    rejectOrder(id: string): Promise<void> {
+        return this.setOrderStatus(id, OrderStatus.CANCELLED);
     }
 
     /** Save the editable profile fields (Settings → "Save changes"). */
@@ -233,12 +246,15 @@ export class ChefService {
         return this.updateMeal(id, { available });
     }
 
-    /** Move an order to a new status. */
+    /** Move an order to a new status (refreshes earnings on capture/refund). */
     async setOrderStatus(id: string, status: OrderStatus): Promise<void> {
         this.ordersState.update((os) => os.map((o) => (o.id === id ? { ...o, status } : o)));
         try {
             const orders = await firstValueFrom(this.http.patch<Order[]>(`${this.base}/me/orders/${id}`, { status }));
             this.ordersState.set(orders);
+            if (status === OrderStatus.DELIVERED || status === OrderStatus.CANCELLED) {
+                this.earningsState.set(await firstValueFrom(this.http.get<ChefEarnings>(`${this.base}/me/earnings`)));
+            }
         } catch {
             // keep the optimistic local change
         }

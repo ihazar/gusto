@@ -88,6 +88,19 @@ export enum OrderStatus {
     IN_PREPARATION = 'IN_PREPARATION',
     ON_THE_WAY = 'ON_THE_WAY',
     DELIVERED = 'DELIVERED',
+    /** Rejected by the chef, cancelled, or auto-cancelled on accept timeout. */
+    CANCELLED = 'CANCELLED',
+}
+
+/** A chef's earnings summary, net of platform commission. */
+export interface ChefEarnings {
+    currency: string;
+    /** Sum of payouts already captured (orders delivered). */
+    paidOut: number;
+    /** Payouts pending settlement. */
+    pending: number;
+    /** Number of completed (delivered) orders. */
+    deliveredCount: number;
 }
 
 /** Lifecycle of the payment backing an order. */

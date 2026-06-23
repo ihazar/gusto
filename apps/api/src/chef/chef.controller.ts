@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
     Chef,
+    ChefEarnings,
     CreateMealDto,
     createMealSchema,
     OnboardingDto,
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { OrdersService } from '../orders/orders.service';
 import { ChefService } from './chef.service';
 
 /**
@@ -28,7 +30,10 @@ import { ChefService } from './chef.service';
 @Controller('chef')
 @UseGuards(JwtAuthGuard)
 export class ChefController {
-    constructor(private readonly chefs: ChefService) {}
+    constructor(
+        private readonly chefs: ChefService,
+        private readonly orders: OrdersService,
+    ) {}
 
     @Get('me')
     getMine(@CurrentUser() user: AuthenticatedUser): Promise<Chef> {
@@ -78,7 +83,7 @@ export class ChefController {
 
     @Get('me/orders')
     listOrders(@CurrentUser() user: AuthenticatedUser): Promise<Order[]> {
-        return this.chefs.listOrders(user.id);
+        return this.orders.chefListOrders(user.id);
     }
 
     @Patch('me/orders/:orderId')
@@ -87,6 +92,11 @@ export class ChefController {
         @Param('orderId') orderId: string,
         @Body(new ZodValidationPipe(updateOrderStatusSchema)) dto: UpdateOrderStatusDto,
     ): Promise<Order[]> {
-        return this.chefs.updateOrderStatus(user.id, orderId, dto.status);
+        return this.orders.chefSetStatus(user.id, orderId, dto.status);
+    }
+
+    @Get('me/earnings')
+    earnings(@CurrentUser() user: AuthenticatedUser): Promise<ChefEarnings> {
+        return this.orders.chefEarnings(user.id);
     }
 }
