@@ -10,6 +10,8 @@ import { DiscoverScreen } from '../screens/DiscoverScreen';
 import { KitchenDetailScreen } from '../screens/KitchenDetailScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { MyOrdersScreen } from '../screens/MyOrdersScreen';
+import { CourierScreen } from '../screens/CourierScreen';
+import { TrackOrderScreen } from '../screens/TrackOrderScreen';
 
 export type CartLine = { dishId: string; name: string; price: number; qty: number };
 
@@ -22,6 +24,8 @@ export type RootStackParamList = {
     KitchenDetail: { id: string; name: string };
     Checkout: { kitchenId: string; kitchenName: string; items: CartLine[] };
     MyOrders: undefined;
+    Courier: undefined;
+    TrackOrder: { orderId: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -48,6 +52,8 @@ export function RootNavigator() {
                     <Stack.Screen name="KitchenDetail" component={KitchenDetailScreen} />
                     <Stack.Screen name="Checkout" component={CheckoutScreen} />
                     <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+                    <Stack.Screen name="Courier" component={CourierScreen} />
+                    <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
                 </>
             ) : (
                 <Stack.Screen name="Login" component={LoginScreen} />

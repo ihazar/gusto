@@ -56,25 +56,33 @@ export function MyOrdersScreen({ navigation }: Props) {
                     data={orders}
                     keyExtractor={(o) => o.id}
                     contentContainerStyle={styles.list}
-                    renderItem={({ item }) => (
-                        <View style={styles.card}>
-                            <View style={styles.cardHead}>
-                                <Text style={styles.kitchen}>{item.kitchenName ?? 'Kitchen'}</Text>
-                                <Text style={styles.status}>{STATUS_LABEL[item.status]}</Text>
-                            </View>
-                            {item.items.map((i) => (
-                                <Text key={i.mealId} style={styles.line}>
-                                    {i.qty}× {i.name}
-                                </Text>
-                            ))}
-                            <View style={styles.cardFoot}>
-                                <Text style={styles.addr} numberOfLines={1}>
-                                    📍 {item.deliveryAddress}
-                                </Text>
-                                <Text style={styles.total}>₪{item.total}</Text>
-                            </View>
-                        </View>
-                    )}
+                    renderItem={({ item }) => {
+                        const live = item.status === OrderStatus.ON_THE_WAY;
+                        return (
+                            <Pressable
+                                style={styles.card}
+                                disabled={!live}
+                                onPress={() => navigation.navigate('TrackOrder', { orderId: item.id })}
+                            >
+                                <View style={styles.cardHead}>
+                                    <Text style={styles.kitchen}>{item.kitchenName ?? 'Kitchen'}</Text>
+                                    <Text style={styles.status}>{STATUS_LABEL[item.status]}</Text>
+                                </View>
+                                {item.items.map((i) => (
+                                    <Text key={i.mealId} style={styles.line}>
+                                        {i.qty}× {i.name}
+                                    </Text>
+                                ))}
+                                <View style={styles.cardFoot}>
+                                    <Text style={styles.addr} numberOfLines={1}>
+                                        📍 {item.deliveryAddress}
+                                    </Text>
+                                    <Text style={styles.total}>₪{item.total}</Text>
+                                </View>
+                                {live && <Text style={styles.track}>Track delivery →</Text>}
+                            </Pressable>
+                        );
+                    }}
                 />
             )}
         </SafeAreaView>
@@ -110,4 +118,5 @@ const styles = StyleSheet.create({
     cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
     addr: { color: '#8a8275', fontSize: 13, flex: 1 },
     total: { color: '#d2553a', fontWeight: '800', fontSize: 16 },
+    track: { color: '#d2553a', fontWeight: '700', fontSize: 14, marginTop: 4 },
 });

@@ -3,14 +3,19 @@ import {
     AuthResponse,
     CatalogQuery,
     Chef,
+    Courier,
+    CourierEarnings,
     CreateOrderDto,
+    DeliveryJob,
     DevicePlatform,
     KitchenDetail,
     KitchenSummary,
     OnboardingDto,
     Order,
+    OrderTracking,
     OtpChannel,
     RequestOtpResponse,
+    UpdateCourierDto,
 } from '@gusto/contracts';
 import { Platform } from 'react-native';
 
@@ -91,6 +96,19 @@ async function send<T>(method: 'PUT' | 'DELETE', path: string, accessToken?: str
     return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
 }
 
+async function patch<T>(path: string, body: unknown, accessToken?: string): Promise<T> {
+    const res = await fetch(`${BASE}${path}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+    return (await res.json()) as T;
+}
+
 function qs(params: Record<string, string | number | undefined>): string {
     const parts = Object.entries(params)
         .filter(([, v]) => v !== undefined && v !== '')
@@ -138,5 +156,17 @@ export const api = {
     orders: {
         create: (accessToken: string, dto: CreateOrderDto) => post<Order>('/orders', dto, accessToken),
         mine: (accessToken: string) => get<Order[]>('/me/orders', accessToken),
+        tracking: (accessToken: string, id: string) => get<OrderTracking>(`/orders/${id}/tracking`, accessToken),
+    },
+
+    courier: {
+        me: (accessToken: string) => get<Courier>('/courier/me', accessToken),
+        update: (accessToken: string, dto: UpdateCourierDto) => patch<Courier>('/courier/me', dto, accessToken),
+        jobs: (accessToken: string) => get<DeliveryJob[]>('/courier/jobs', accessToken),
+        accept: (accessToken: string, id: string) => post<DeliveryJob[]>(`/courier/jobs/${id}/accept`, {}, accessToken),
+        pickup: (accessToken: string, id: string) => post<DeliveryJob[]>(`/courier/jobs/${id}/pickup`, {}, accessToken),
+        deliver: (accessToken: string, id: string) =>
+            post<DeliveryJob[]>(`/courier/jobs/${id}/deliver`, {}, accessToken),
+        earnings: (accessToken: string) => get<CourierEarnings>('/courier/earnings', accessToken),
     },
 };
