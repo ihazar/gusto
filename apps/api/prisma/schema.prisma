@@ -30,11 +30,12 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  devices       Device[]
-  refreshTokens RefreshToken[]
-  chefProfile   ChefProfile?
-  favorites     Favorite[]
-  orders        Order[]        @relation("CustomerOrders")
+  devices        Device[]
+  refreshTokens  RefreshToken[]
+  chefProfile    ChefProfile?
+  courierProfile Courier?
+  favorites      Favorite[]
+  orders         Order[]        @relation("CustomerOrders")
 }
 
 model Device {
@@ -190,6 +191,7 @@ model Order {
   items   OrderItem[]
   payment Payment?
   payout  Payout?
+  delivery DeliveryJob?
 
   @@index([chefProfileId])
   @@index([customerId])
@@ -233,4 +235,49 @@ model Payout {
   createdAt     DateTime    @default(now())
 
   @@index([chefProfileId])
+}
+
+// ── M5: in-house "Gus" couriers ──────────────────────────────────────────
+
+model Courier {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName String   @default("")
+  vehicle     String   @default("scooter") // bike | scooter | car
+  online      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  jobs DeliveryJob[]
+}
+
+// One delivery per order. Created when the chef hands off (order -> ON_THE_WAY),
+// claimed from a job pool by an online courier, completed on delivery.
+model DeliveryJob {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  courierId String?
+  courier   Courier? @relation(fields: [courierId], references: [id], onDelete: SetNull)
+
+  status String // PENDING | ASSIGNED | PICKED_UP | DELIVERED | CANCELLED
+
+  pickupLat  Float
+  pickupLng  Float
+  pickupName String
+  dropoffLat     Float
+  dropoffLng     Float
+  dropoffAddress String
+
+  fee      Float // courier earnings (delivery fee + tip)
+  currency String
+
+  assignedAt  DateTime?
+  pickedUpAt  DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([courierId])
+  @@index([status])
 }

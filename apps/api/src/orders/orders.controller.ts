@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { CreateOrderDto, createOrderSchema, Order } from '@gusto/contracts';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { CreateOrderDto, createOrderSchema, Order, OrderTracking } from '@gusto/contracts';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
@@ -24,5 +24,11 @@ export class OrdersController {
     @Get('me/orders')
     mine(@CurrentUser() user: AuthenticatedUser): Promise<Order[]> {
         return this.orders.listForCustomer(user.id);
+    }
+
+    /** Live delivery tracking for one of the customer's orders. */
+    @Get('orders/:id/tracking')
+    tracking(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<OrderTracking> {
+        return this.orders.getTracking(user.id, id);
     }
 }

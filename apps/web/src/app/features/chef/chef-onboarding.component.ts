@@ -1315,9 +1315,10 @@ export class ChefOnboardingComponent {
     }
 
     nextStatus(status: OrderStatus): OrderStatus | null {
-        const order = [OrderStatus.NEW, OrderStatus.IN_PREPARATION, OrderStatus.ON_THE_WAY, OrderStatus.DELIVERED];
-        const i = order.indexOf(status);
-        return i >= 0 && i < order.length - 1 ? order[i + 1] : null;
+        // The chef advances up to hand-off; a "Gus" courier delivers from there.
+        if (status === OrderStatus.NEW) return OrderStatus.IN_PREPARATION;
+        if (status === OrderStatus.IN_PREPARATION) return OrderStatus.ON_THE_WAY;
+        return null;
     }
 
     advanceLabel(next: OrderStatus): string {
@@ -1325,7 +1326,7 @@ export class ChefOnboardingComponent {
             case OrderStatus.IN_PREPARATION:
                 return 'Start preparing →';
             case OrderStatus.ON_THE_WAY:
-                return 'Send with Gus →';
+                return 'Ready — hand to Gus →';
             case OrderStatus.DELIVERED:
                 return 'Mark delivered →';
             default:

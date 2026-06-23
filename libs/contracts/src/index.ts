@@ -7,3 +7,5 @@ export * from './chef/geo';
 export * from './catalog/catalog.types';
 export * from './catalog/catalog.schemas';
 export * from './orders/orders.schemas';
+export * from './courier/courier.types';
+export * from './courier/courier.schemas';

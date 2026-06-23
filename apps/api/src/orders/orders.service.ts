@@ -7,7 +7,15 @@ import {
     OnModuleInit,
 } from '@nestjs/common';
 import { Order as POrder, Payment as PPayment } from '@prisma/client';
-import { ChefEarnings, CreateOrderDto, Order, OrderStatus } from '@gusto/contracts';
+import {
+    ChefEarnings,
+    CreateOrderDto,
+    DeliveryStatus,
+    Order,
+    OrderStatus,
+    OrderTracking,
+    Vehicle,
+} from '@gusto/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { computeTotals } from './fees';
 import { PAYMENT_PROVIDER, PaymentProvider } from './payment.provider';
@@ -157,13 +165,51 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     private async applyTransition(order: POrder & { payment: PPayment | null }, status: OrderStatus): Promise<void> {
         if (status === OrderStatus.CANCELLED) {
             await this.releaseFunds(order);
+            await this.prisma.deliveryJob.updateMany({
+                where: { orderId: order.id, status: { notIn: ['DELIVERED', 'CANCELLED'] } },
+                data: { status: 'CANCELLED' },
+            });
             await this.prisma.order.update({ where: { id: order.id }, data: { status } });
-        } else if (status === OrderStatus.DELIVERED) {
-            await this.captureAndPayout(order);
+        } else if (status === OrderStatus.ON_THE_WAY) {
+            // Chef hands off: create the delivery job for the courier pool.
             await this.prisma.order.update({ where: { id: order.id }, data: { status } });
-        } else {
+            await this.createDeliveryJob(order.id);
+        } else if (status === OrderStatus.IN_PREPARATION) {
             await this.prisma.order.update({ where: { id: order.id }, data: { status } });
         }
+        // DELIVERED is courier-driven (completeDelivery), not a chef transition.
+    }
+
+    /** Create the PENDING delivery job for an order (idempotent). */
+    private async createDeliveryJob(orderId: string): Promise<void> {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: { chef: { select: { lat: true, lng: true, kitchenName: true } }, delivery: true },
+        });
+        if (!order || order.delivery) return;
+        const drop = synthDropoff(order.chef.lat, order.chef.lng, order.id);
+        await this.prisma.deliveryJob.create({
+            data: {
+                orderId: order.id,
+                status: 'PENDING',
+                pickupLat: order.chef.lat,
+                pickupLng: order.chef.lng,
+                pickupName: order.chef.kitchenName || 'Kitchen',
+                dropoffLat: drop.lat,
+                dropoffLng: drop.lng,
+                dropoffAddress: order.deliveryAddress,
+                fee: round2(order.deliveryFee + order.tip),
+                currency: order.currency,
+            },
+        });
+    }
+
+    /** Courier-completed delivery: capture funds, pay the chef, close the order. */
+    async completeDelivery(orderId: string): Promise<void> {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true } });
+        if (!order || order.status === OrderStatus.DELIVERED || order.status === OrderStatus.CANCELLED) return;
+        await this.captureAndPayout(order);
+        await this.prisma.order.update({ where: { id: orderId }, data: { status: OrderStatus.DELIVERED } });
     }
 
     /** Void a still-authorized payment, or refund a captured one. */
@@ -212,4 +258,59 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const p = await this.prisma.chefProfile.findUnique({ where: { userId }, select: { id: true } });
         return p?.id ?? null;
     }
+
+    /** Live tracking for the customer who owns the order. */
+    async getTracking(customerId: string, orderId: string): Promise<OrderTracking> {
+        const order = await this.prisma.order.findFirst({
+            where: { id: orderId, customerId },
+            include: { delivery: { include: { courier: true } } },
+        });
+        if (!order) throw new NotFoundException('Order not found');
+        const d = order.delivery;
+        const tracking: OrderTracking = { orderStatus: order.status as OrderStatus };
+        if (d && d.status !== DeliveryStatus.CANCELLED) {
+            const pickup = { lat: d.pickupLat, lng: d.pickupLng };
+            const dropoff = { lat: d.dropoffLat, lng: d.dropoffLng };
+            let progress = 0;
+            let position = pickup;
+            let eta = DELIVER_MINUTES;
+            if (d.status === DeliveryStatus.PICKED_UP && d.pickedUpAt) {
+                const elapsedMin = (Date.now() - d.pickedUpAt.getTime()) / 60_000;
+                progress = Math.min(elapsedMin / DELIVER_MINUTES, 1);
+                position = lerp(pickup, dropoff, progress);
+                eta = Math.max(0, Math.ceil(DELIVER_MINUTES * (1 - progress)));
+            } else if (d.status === DeliveryStatus.DELIVERED) {
+                progress = 1;
+                position = dropoff;
+                eta = 0;
+            }
+            tracking.delivery = {
+                status: d.status as DeliveryStatus,
+                courierName: d.courier?.displayName || undefined,
+                vehicle: (d.courier?.vehicle as Vehicle) || undefined,
+                pickup,
+                dropoff,
+                courierPosition: position,
+                etaMinutes: eta,
+                progress: round2(progress),
+            };
+        }
+        return tracking;
+    }
+}
+
+/** Fixed door-to-door delivery time (minutes) used for the simulated ETA. */
+const DELIVER_MINUTES = 12;
+
+function lerp(a: { lat: number; lng: number }, b: { lat: number; lng: number }, t: number) {
+    return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+}
+
+/** Deterministic dropoff ~1 km from the kitchen (we don't geocode addresses yet). */
+function synthDropoff(lat: number, lng: number, seed: string): { lat: number; lng: number } {
+    let h = 0;
+    for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+    const dLat = ((h % 200) - 100) / 10_000; // ±0.01° ≈ ±1.1 km
+    const dLng = (((h >> 8) % 200) - 100) / 10_000;
+    return { lat: lat + dLat, lng: lng + dLng };
 }
