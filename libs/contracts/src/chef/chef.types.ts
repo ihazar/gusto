@@ -151,6 +151,8 @@ export interface Order {
     /** The kitchen this order is for (customer-facing views). */
     kitchenId?: string;
     kitchenName?: string;
+    /** Whether the customer has already reviewed this order. */
+    reviewed?: boolean;
 }
 
 /** A home-chef profile, as built during onboarding. */

@@ -5,12 +5,14 @@ export const ORDER_INCLUDE = {
     items: true,
     payment: true,
     chef: { select: { kitchenName: true } },
+    review: { select: { id: true } },
 } satisfies Prisma.OrderInclude;
 
 export type OrderRow = POrder & {
     items: POrderItem[];
     payment: PPayment | null;
     chef?: { kitchenName: string } | null;
+    review?: { id: string } | null;
 };
 
 export function toOrder(o: OrderRow): Order {
@@ -35,5 +37,6 @@ export function toOrder(o: OrderRow): Order {
         paymentStatus: (o.payment?.status as PaymentStatus) ?? undefined,
         kitchenId: o.chefProfileId,
         kitchenName: o.chef?.kitchenName ?? undefined,
+        reviewed: o.review != null,
     };
 }

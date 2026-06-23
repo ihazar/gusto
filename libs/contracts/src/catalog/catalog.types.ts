@@ -32,4 +32,7 @@ export interface KitchenSummary {
 export interface KitchenDetail extends Chef {
     distanceKm?: number;
     favorited?: boolean;
+    /** Aggregate customer rating (0–5) and how many ratings back it. */
+    rating: number;
+    ratingCount: number;
 }

@@ -104,6 +104,7 @@ export function KitchenDetailScreen({ navigation, route }: Props) {
                         <Text style={styles.byline}>
                             by {kitchen.name} · {kitchen.address.city}
                             {kitchen.distanceKm !== undefined ? ` · ${kitchen.distanceKm} km` : ''}
+                            {kitchen.ratingCount > 0 ? ` · ★ ${kitchen.rating} (${kitchen.ratingCount})` : ''}
                         </Text>
                     </View>
                 </View>

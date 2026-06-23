@@ -36,6 +36,7 @@ model User {
   courierProfile Courier?
   favorites      Favorite[]
   orders         Order[]        @relation("CustomerOrders")
+  reviews        Review[]
 }
 
 model Device {
@@ -99,6 +100,10 @@ model ChefProfile {
   active          Boolean @default(false)
   acceptingOrders Boolean @default(false)
 
+  // aggregate customer rating (avg = ratingSum / ratingCount)
+  ratingSum   Float @default(0)
+  ratingCount Int   @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -107,6 +112,7 @@ model ChefProfile {
   favoritedBy  Favorite[]
   orders       Order[]
   payouts      Payout[]
+  reviews      Review[]
 }
 
 model Dish {
@@ -188,10 +194,11 @@ model Order {
   deliveryAddress String
   placedAt        DateTime @default(now())
 
-  items   OrderItem[]
-  payment Payment?
-  payout  Payout?
+  items    OrderItem[]
+  payment  Payment?
+  payout   Payout?
   delivery DeliveryJob?
+  review   Review?
 
   @@index([chefProfileId])
   @@index([customerId])
@@ -280,4 +287,23 @@ model DeliveryJob {
 
   @@index([courierId])
   @@index([status])
+}
+
+// ── M6: reviews ──────────────────────────────────────────────────────────
+
+model Review {
+  id            String      @id @default(cuid())
+  orderId       String      @unique
+  order         Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  chefProfileId String
+  chef          ChefProfile @relation(fields: [chefProfileId], references: [id], onDelete: Cascade)
+
+  rating  Int // 1–5
+  comment String @default("")
+
+  createdAt DateTime @default(now())
+
+  @@index([chefProfileId])
 }

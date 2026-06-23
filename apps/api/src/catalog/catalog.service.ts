@@ -48,7 +48,8 @@ export class CatalogService {
         const favorited = viewerId ? (await this.favoriteIds(viewerId)).has(id) : undefined;
         // Only surface available dishes to customers.
         const chef = toChef({ ...profile, dishes: profile.dishes.filter((d) => d.available) });
-        return { ...chef, favorited };
+        const rating = profile.ratingCount ? Math.round((profile.ratingSum / profile.ratingCount) * 10) / 10 : 0;
+        return { ...chef, favorited, rating, ratingCount: profile.ratingCount };
     }
 
     async listFavorites(userId: string): Promise<KitchenSummary[]> {
@@ -92,15 +93,16 @@ function toSummary(
         city: string;
         lat: number;
         lng: number;
+        ratingSum: number;
+        ratingCount: number;
     },
     dishes: PDish[],
     lat?: number,
     lng?: number,
     favorited?: boolean,
 ): KitchenSummary {
-    const rated = dishes.filter((d) => d.ratingCount > 0);
-    const ratingCount = rated.reduce((n, d) => n + d.ratingCount, 0);
-    const rating = ratingCount ? rated.reduce((s, d) => s + d.rating * d.ratingCount, 0) / ratingCount : 0;
+    const ratingCount = p.ratingCount;
+    const rating = ratingCount ? p.ratingSum / ratingCount : 0;
     const prices = dishes.map((d) => d.price);
     return {
         id: p.id,

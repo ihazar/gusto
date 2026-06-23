@@ -1,5 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { CreateOrderDto, createOrderSchema, Order, OrderTracking } from '@gusto/contracts';
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
+import {
+    CreateOrderDto,
+    createOrderSchema,
+    CreateReviewDto,
+    createReviewSchema,
+    Order,
+    OrderTracking,
+} from '@gusto/contracts';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
@@ -30,5 +37,16 @@ export class OrdersController {
     @Get('orders/:id/tracking')
     tracking(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<OrderTracking> {
         return this.orders.getTracking(user.id, id);
+    }
+
+    /** Review a delivered order. */
+    @Post('orders/:id/review')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    review(
+        @CurrentUser() user: AuthenticatedUser,
+        @Param('id') id: string,
+        @Body(new ZodValidationPipe(createReviewSchema)) dto: CreateReviewDto,
+    ): Promise<void> {
+        return this.orders.createReview(user.id, id, dto);
     }
 }

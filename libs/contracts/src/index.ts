@@ -9,3 +9,4 @@ export * from './catalog/catalog.schemas';
 export * from './orders/orders.schemas';
 export * from './courier/courier.types';
 export * from './courier/courier.schemas';
+export * from './reviews/reviews';

@@ -32,6 +32,16 @@ export function MyOrdersScreen({ navigation }: Props) {
         }
     }, [callWithAuth]);
 
+    const rate = async (orderId: string, rating: number) => {
+        // optimistic: mark reviewed so the stars disappear
+        setOrders((os) => os.map((o) => (o.id === orderId ? { ...o, reviewed: true } : o)));
+        try {
+            await callWithAuth((t) => api.orders.review(t, orderId, { rating, comment: '' }));
+        } catch {
+            void load();
+        }
+    };
+
     useEffect(() => {
         const unsub = navigation.addListener('focus', load);
         return unsub;
@@ -80,6 +90,19 @@ export function MyOrdersScreen({ navigation }: Props) {
                                     <Text style={styles.total}>₪{item.total}</Text>
                                 </View>
                                 {live && <Text style={styles.track}>Track delivery →</Text>}
+                                {item.status === OrderStatus.DELIVERED && !item.reviewed && (
+                                    <View style={styles.rateRow}>
+                                        <Text style={styles.rateLbl}>Rate:</Text>
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <Pressable key={n} onPress={() => rate(item.id, n)} hitSlop={6}>
+                                                <Text style={styles.star}>☆</Text>
+                                            </Pressable>
+                                        ))}
+                                    </View>
+                                )}
+                                {item.status === OrderStatus.DELIVERED && item.reviewed && (
+                                    <Text style={styles.rated}>★ Thanks for rating!</Text>
+                                )}
                             </Pressable>
                         );
                     }}
@@ -119,4 +142,8 @@ const styles = StyleSheet.create({
     addr: { color: '#8a8275', fontSize: 13, flex: 1 },
     total: { color: '#d2553a', fontWeight: '800', fontSize: 16 },
     track: { color: '#d2553a', fontWeight: '700', fontSize: 14, marginTop: 4 },
+    rateRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 },
+    rateLbl: { color: '#6b6457', fontSize: 14, marginRight: 4 },
+    star: { fontSize: 26, color: '#f5a623' },
+    rated: { color: '#1d7a4a', fontWeight: '600', fontSize: 14, marginTop: 6 },
 });

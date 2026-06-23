@@ -10,6 +10,7 @@ import { Order as POrder, Payment as PPayment } from '@prisma/client';
 import {
     ChefEarnings,
     CreateOrderDto,
+    CreateReviewDto,
     DeliveryStatus,
     Order,
     OrderStatus,
@@ -116,6 +117,32 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             include: ORDER_INCLUDE,
         });
         return rows.map(toOrder);
+    }
+
+    /** Leave a rating + comment on a delivered order (once). */
+    async createReview(customerId: string, orderId: string, dto: CreateReviewDto): Promise<void> {
+        const order = await this.prisma.order.findFirst({
+            where: { id: orderId, customerId },
+            include: { review: { select: { id: true } } },
+        });
+        if (!order) throw new NotFoundException('Order not found');
+        if (order.status !== OrderStatus.DELIVERED) throw new BadRequestException('You can review once it’s delivered');
+        if (order.review) throw new BadRequestException('You already reviewed this order');
+        await this.prisma.$transaction([
+            this.prisma.review.create({
+                data: {
+                    orderId,
+                    customerId,
+                    chefProfileId: order.chefProfileId,
+                    rating: dto.rating,
+                    comment: dto.comment,
+                },
+            }),
+            this.prisma.chefProfile.update({
+                where: { id: order.chefProfileId },
+                data: { ratingSum: { increment: dto.rating }, ratingCount: { increment: 1 } },
+            }),
+        ]);
     }
 
     // ── chef side ─────────────────────────────────────────────────────────

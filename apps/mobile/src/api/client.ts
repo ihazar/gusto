@@ -6,6 +6,7 @@ import {
     Courier,
     CourierEarnings,
     CreateOrderDto,
+    CreateReviewDto,
     DeliveryJob,
     DevicePlatform,
     KitchenDetail,
@@ -157,6 +158,8 @@ export const api = {
         create: (accessToken: string, dto: CreateOrderDto) => post<Order>('/orders', dto, accessToken),
         mine: (accessToken: string) => get<Order[]>('/me/orders', accessToken),
         tracking: (accessToken: string, id: string) => get<OrderTracking>(`/orders/${id}/tracking`, accessToken),
+        review: (accessToken: string, id: string, dto: CreateReviewDto) =>
+            post<void>(`/orders/${id}/review`, dto, accessToken),
     },
 
     courier: {
