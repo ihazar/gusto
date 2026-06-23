@@ -115,7 +115,7 @@ export function LoginScreen() {
                                     </Pressable>
                                     <TextInput
                                         style={styles.input}
-                                        placeholder="54 595 3217"
+                                        placeholder="54-5600700"
                                         placeholderTextColor="#bcb4a6"
                                         keyboardType="phone-pad"
                                         autoFocus

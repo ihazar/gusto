@@ -8,6 +8,12 @@
         "userInterfaceStyle": "automatic",
         "ios": { "supportsTablet": true, "bundleIdentifier": "com.gusto.app" },
         "android": { "package": "com.gusto.app" },
+        "plugins": [
+            [
+                "expo-image-picker",
+                { "photosPermission": "Gusto needs access to your photos to set your kitchen and dish images." }
+            ]
+        ],
         "extra": {
             "apiUrl": "https://gustochefs.com/api"
         }

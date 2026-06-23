@@ -1,11 +1,35 @@
 import Constants from 'expo-constants';
-import { AuthResponse, DevicePlatform, OtpChannel, RequestOtpResponse } from '@gusto/contracts';
+import { AuthResponse, Chef, DevicePlatform, OnboardingDto, OtpChannel, RequestOtpResponse } from '@gusto/contracts';
 import { Platform } from 'react-native';
 
-// Resolve order: EXPO_PUBLIC_API_URL env (flip to local) -> app.json extra
-// (Heroku default) -> hardcoded fallback.
+/** An error carrying the HTTP status, so callers can react to 401 etc. */
+export class ApiError extends Error {
+    constructor(
+        message: string,
+        readonly status: number,
+    ) {
+        super(message);
+    }
+}
+
+/**
+ * In development, talk to the API on the same host that served the JS bundle
+ * (Metro), swapping Metro's port for the API's. This makes the iOS simulator
+ * (localhost), the Android emulator (which can't see the host's localhost), and
+ * physical devices on the LAN all work with no per-platform configuration.
+ */
+function devApiBase(): string | undefined {
+    const hostUri =
+        Constants.expoConfig?.hostUri ?? (Constants.expoGoConfig as { debuggerHost?: string } | null)?.debuggerHost;
+    const host = hostUri?.split(':')[0];
+    return host ? `http://${host}:5007/api` : undefined;
+}
+
+// Resolve order: explicit EXPO_PUBLIC_API_URL override -> dev host auto-detect
+// -> app.json extra (Heroku/prod default) -> hardcoded fallback.
 const BASE = (
     process.env.EXPO_PUBLIC_API_URL ??
+    (__DEV__ ? devApiBase() : undefined) ??
     (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
     'https://gustochefs.com/api'
 ).replace(/\/$/, '');
@@ -31,10 +55,18 @@ async function post<T>(path: string, body: unknown, accessToken?: string): Promi
         } catch {
             // non-JSON body; keep the generic message
         }
-        throw new Error(message);
+        throw new ApiError(message, res.status);
     }
 
     return res.status === 204 ? (undefined as T) : ((await res.json()) as T);
+}
+
+async function get<T>(path: string, accessToken?: string): Promise<T> {
+    const res = await fetch(`${BASE}${path}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+    if (!res.ok) throw new ApiError(`Request failed (${res.status})`, res.status);
+    return (await res.json()) as T;
 }
 
 const devicePlatform: DevicePlatform = Platform.OS === 'ios' ? DevicePlatform.IOS : DevicePlatform.ANDROID;
@@ -53,4 +85,10 @@ export const api = {
     refresh: (refreshToken: string) => post<AuthResponse>('/auth/refresh', { refreshToken }),
 
     logout: (refreshToken: string) => post<void>('/auth/logout', { refreshToken }),
+
+    chef: {
+        me: (accessToken: string) => get<Chef>('/chef/me', accessToken),
+        completeOnboarding: (accessToken: string, dto: OnboardingDto) =>
+            post<Chef>('/chef/me/onboarding/complete', dto, accessToken),
+    },
 };
