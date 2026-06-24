@@ -62,6 +62,11 @@ class FakeUsers implements UserRepository {
     async upsertDevice(userId: string, device: DeviceInfo): Promise<void> {
         this.devices.push({ userId, device });
     }
+    async grantRole(userId: string, role: UserRole): Promise<UserRecord> {
+        const user = this.byId.get(userId)!;
+        if (!user.roles.includes(role)) user.roles = [...user.roles, role];
+        return user;
+    }
 }
 
 class FakeRefreshTokens implements RefreshTokenRepository {
@@ -110,7 +115,7 @@ const jwtConfig = {
 };
 const fakeConfig = { get: () => jwtConfig } as any as ConfigService<any, true>;
 const authConfig = {
-    get: () => ({ testCode: '', testPhones: [] as string[] }),
+    get: (key: string) => (key === 'adminPhones' ? [] : { testCode: '', testPhones: [] as string[] }),
 } as any as ConfigService<any, true>;
 
 const device: DeviceInfo = { deviceId: 'dev-1', platform: DevicePlatform.IOS };

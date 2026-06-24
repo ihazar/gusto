@@ -10,6 +10,7 @@ import { ChefModule } from './chef/chef.module';
 import { CatalogModule } from './catalog/catalog.module';
 import { OrdersModule } from './orders/orders.module';
 import { CourierModule } from './courier/courier.module';
+import { AdminModule } from './admin/admin.module';
 import { MeController } from './me/me.controller';
 import { HealthController } from './health/health.controller';
 
@@ -30,6 +31,7 @@ const staticImports = existsSync(join(webDist, 'index.html'))
         CatalogModule,
         OrdersModule,
         CourierModule,
+        AdminModule,
     ],
     controllers: [HealthController, MeController],
 })

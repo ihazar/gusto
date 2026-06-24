@@ -1,6 +1,8 @@
 export interface AppConfig {
     env: string;
     port: number;
+    /** E.164 numbers granted the ADMIN role on login (ops console access). */
+    adminPhones: string[];
     jwt: {
         accessSecret: string;
         refreshSecret: string;
@@ -36,6 +38,10 @@ export default (): AppConfig => ({
     // Heroku (and most PaaS) inject PORT; fall back to API_PORT locally.
     // 5007 (not 5000) — macOS AirPlay Receiver squats on 5000. See README.
     port: num(process.env.PORT ?? process.env.API_PORT, 5007),
+    adminPhones: (process.env.ADMIN_PHONES ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
     jwt: {
         accessSecret: process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret-change-me',
         refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret-change-me',

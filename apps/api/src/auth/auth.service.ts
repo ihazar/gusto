@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthResponse, OtpChannel, RequestOtpResponse, VerifyOtpDto } from '@gusto/contracts';
+import { AuthResponse, OtpChannel, RequestOtpResponse, UserRole, VerifyOtpDto } from '@gusto/contracts';
 import { AppConfig } from '../config/configuration';
 import { OTP_PROVIDER, OtpProvider, RATE_LIMITER, RateLimiter, USER_REPOSITORY, UserRepository } from './ports';
 import { TokenService } from './token.service';
@@ -11,17 +11,19 @@ export class AuthService {
     private readonly logger = new Logger(AuthService.name);
     private readonly testCode: string;
     private readonly testPhones: Set<string>;
+    private readonly adminPhones: Set<string>;
 
     constructor(
         @Inject(OTP_PROVIDER) private readonly otp: OtpProvider,
         @Inject(RATE_LIMITER) private readonly rateLimiter: RateLimiter,
         @Inject(USER_REPOSITORY) private readonly users: UserRepository,
         private readonly tokens: TokenService,
-        config: ConfigService<{ otp: AppConfig['otp'] }, true>,
+        config: ConfigService<{ otp: AppConfig['otp']; adminPhones: string[] }, true>,
     ) {
         const otpCfg = config.get('otp', { infer: true });
         this.testCode = otpCfg.testCode;
         this.testPhones = new Set(otpCfg.testPhones);
+        this.adminPhones = new Set(config.get('adminPhones', { infer: true }) ?? []);
     }
 
     /** Allowlisted number that logs in with the fixed test code, bypassing the
@@ -73,7 +75,12 @@ export class AuthService {
             throw new OtpVerificationError();
         }
 
-        const user = (await this.users.findByPhone(dto.phone)) ?? (await this.users.createCustomer(dto.phone));
+        let user = (await this.users.findByPhone(dto.phone)) ?? (await this.users.createCustomer(dto.phone));
+
+        // Bootstrap ops/admin access for allowlisted numbers.
+        if (this.adminPhones.has(dto.phone) && !user.roles.includes(UserRole.ADMIN)) {
+            user = await this.users.grantRole(user.id, UserRole.ADMIN);
+        }
 
         if (dto.device) {
             await this.users.upsertDevice(user.id, dto.device);

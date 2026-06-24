@@ -24,6 +24,16 @@ export class PrismaUserRepository implements UserRepository {
         return this.toRecord(user);
     }
 
+    async grantRole(userId: string, role: UserRole): Promise<UserRecord> {
+        const current = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+        if (current.roles.includes(role)) return this.toRecord(current);
+        const user = await this.prisma.user.update({
+            where: { id: userId },
+            data: { roles: { set: [...current.roles, role] } },
+        });
+        return this.toRecord(user);
+    }
+
     async upsertDevice(userId: string, device: DeviceInfo): Promise<void> {
         // deviceId is the primary key, so it's unique across all users. Match on
         // it directly and (re)assign ownership to whoever is logging in now — the

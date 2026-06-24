@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { adminGuard } from './core/auth/admin.guard';
 
 export const routes: Routes = [
     {
@@ -21,6 +22,11 @@ export const routes: Routes = [
         path: 'chef',
         canActivate: [authGuard],
         loadComponent: () => import('./features/chef/chef-onboarding.component').then((m) => m.ChefOnboardingComponent),
+    },
+    {
+        path: 'admin',
+        canActivate: [adminGuard],
+        loadComponent: () => import('./features/admin/admin.component').then((m) => m.AdminComponent),
     },
     { path: '**', redirectTo: '' },
 ];

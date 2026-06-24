@@ -41,6 +41,8 @@ export interface UserRepository {
     findById(id: string): Promise<UserRecord | null>;
     createCustomer(phone: string): Promise<UserRecord>;
     upsertDevice(userId: string, device: DeviceInfo): Promise<void>;
+    /** Add a role to a user (idempotent); returns the updated record. */
+    grantRole(userId: string, role: UserRole): Promise<UserRecord>;
 }
 
 export interface RefreshTokenRecord {
