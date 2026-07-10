@@ -8,6 +8,7 @@ import { useAuth } from '../auth/auth-context';
 import { api } from '../api/client';
 
 const symbol = (c: string) => (c === 'ILS' ? '₪' : c === 'USD' ? '$' : c === 'EUR' ? '€' : `${c} `);
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'KitchenDetail'>;
 
@@ -111,6 +112,16 @@ export function KitchenDetailScreen({ navigation, route }: Props) {
 
                 {!!kitchen.bio && <Text style={styles.bio}>{kitchen.bio}</Text>}
                 <Text style={styles.addr}>📍 {addr}</Text>
+                {!!kitchen.availability?.length && (
+                    <Text style={styles.windows}>
+                        🗓 Cooks to order · delivery windows:{' '}
+                        {kitchen.availability
+                            .slice()
+                            .sort((a, b) => a.weekday - b.weekday || (a.startTime < b.startTime ? -1 : 1))
+                            .map((w) => `${WEEKDAYS[w.weekday]} ${w.startTime}–${w.endTime}`)
+                            .join(' · ')}
+                    </Text>
+                )}
                 {!kitchen.acceptingOrders && <Text style={styles.paused}>⛔ Not taking orders right now</Text>}
 
                 <Text style={styles.menuTitle}>On the menu</Text>
@@ -256,6 +267,7 @@ const styles = StyleSheet.create({
     byline: { color: '#6b6457', fontSize: 14, marginTop: 2 },
     bio: { color: '#44403a', fontSize: 15, lineHeight: 22, paddingHorizontal: 18, marginTop: 14 },
     addr: { color: '#6b6457', fontSize: 13, paddingHorizontal: 18, marginTop: 8 },
+    windows: { color: '#7a4a36', fontSize: 13, paddingHorizontal: 18, marginTop: 8, lineHeight: 19 },
     paused: { color: '#b3261e', fontSize: 13, paddingHorizontal: 18, marginTop: 8, fontWeight: '600' },
     menuTitle: {
         fontSize: 20,

@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { DeliverySlot } from '@gusto/contracts';
 import { RootStackParamList } from '../navigation/RootNavigator';
 import { useAuth } from '../auth/auth-context';
 import { api } from '../api/client';
@@ -14,6 +15,15 @@ const VAT_RATE = 0.18;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 const TIPS = [0, 5, 10, 15];
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "2026-07-12" + weekday 0 → "Sun, Jul 12". */
+function slotDateLabel(s: DeliverySlot): string {
+    const [, m, d] = s.date.split('-').map(Number);
+    return `${WEEKDAYS[s.weekday]}, ${MONTHS[m - 1]} ${d}`;
+}
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>;
 
 export function CheckoutScreen({ navigation, route }: Props) {
@@ -24,6 +34,17 @@ export function CheckoutScreen({ navigation, route }: Props) {
     const [tip, setTip] = useState(0);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // Order-ahead: kitchens with weekly windows require picking a delivery slot.
+    const [slots, setSlots] = useState<DeliverySlot[] | null>(null);
+    const [slot, setSlot] = useState<DeliverySlot | null>(null);
+
+    useEffect(() => {
+        api.catalog
+            .slots(kitchenId)
+            .then(setSlots)
+            .catch(() => setSlots([])); // treat as ASAP kitchen if the lookup fails
+    }, [kitchenId]);
 
     const totals = useMemo(() => {
         const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
@@ -38,6 +59,10 @@ export function CheckoutScreen({ navigation, route }: Props) {
             setError('Please enter a delivery address.');
             return;
         }
+        if (slots?.length && !slot) {
+            setError('Pick a delivery window — this chef cooks to order.');
+            return;
+        }
         setBusy(true);
         setError(null);
         try {
@@ -47,6 +72,7 @@ export function CheckoutScreen({ navigation, route }: Props) {
                     items: items.map((i) => ({ dishId: i.dishId, qty: i.qty })),
                     deliveryAddress: address.trim(),
                     tip,
+                    slot: slot ? { availabilityId: slot.availabilityId, date: slot.date } : undefined,
                 }),
             );
             navigation.replace('MyOrders');
@@ -80,6 +106,38 @@ export function CheckoutScreen({ navigation, route }: Props) {
                         </View>
                     ))}
                 </View>
+
+                {slots === null && <ActivityIndicator color="#d2553a" />}
+                {!!slots?.length && (
+                    <>
+                        <Text style={styles.label}>Delivery window</Text>
+                        <View style={styles.slots}>
+                            {slots.map((s) => {
+                                const key = `${s.availabilityId}|${s.date}`;
+                                const selected = slot?.availabilityId === s.availabilityId && slot?.date === s.date;
+                                const full = s.remaining <= 0;
+                                return (
+                                    <Pressable
+                                        key={key}
+                                        style={[styles.slot, selected && styles.slotOn, full && styles.slotOff]}
+                                        disabled={full}
+                                        onPress={() => setSlot(s)}
+                                    >
+                                        <Text style={[styles.slotDate, selected && styles.slotTxtOn]}>
+                                            {slotDateLabel(s)}
+                                        </Text>
+                                        <Text style={[styles.slotTime, selected && styles.slotTxtOn]}>
+                                            {s.startTime}–{s.endTime}
+                                        </Text>
+                                        <Text style={[styles.slotLeft, full && styles.slotLeftFull]}>
+                                            {full ? 'Full' : `${s.remaining} left`}
+                                        </Text>
+                                    </Pressable>
+                                );
+                            })}
+                        </View>
+                    </>
+                )}
 
                 <Text style={styles.label}>Delivery address</Text>
                 <TextInput
@@ -167,6 +225,25 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#1d1b16',
     },
+    slots: { gap: 8 },
+    slot: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        borderWidth: 1,
+        borderColor: '#e3ddd2',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        paddingVertical: 11,
+        paddingHorizontal: 13,
+    },
+    slotOn: { borderColor: '#d2553a', backgroundColor: '#fff0e8' },
+    slotOff: { opacity: 0.5 },
+    slotDate: { color: '#1d1b16', fontWeight: '700', fontSize: 14, flex: 1 },
+    slotTime: { color: '#44403a', fontSize: 14 },
+    slotTxtOn: { color: '#d2553a' },
+    slotLeft: { color: '#8a8275', fontSize: 12, fontWeight: '600' },
+    slotLeftFull: { color: '#b3261e' },
     tips: { flexDirection: 'row', gap: 8 },
     tip: {
         borderWidth: 1,

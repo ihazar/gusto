@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { CatalogQuery, catalogQuerySchema, KitchenDetail, KitchenSummary } from '@gusto/contracts';
+import { CatalogQuery, catalogQuerySchema, DeliverySlot, KitchenDetail, KitchenSummary } from '@gusto/contracts';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { AuthenticatedUser } from '../auth/strategies/jwt.strategy';
@@ -23,5 +23,11 @@ export class CatalogController {
     @Get(':id')
     get(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser | null): Promise<KitchenDetail> {
         return this.catalog.getKitchen(id, user?.id);
+    }
+
+    /** Upcoming order-ahead delivery windows (empty = ASAP-only kitchen). */
+    @Get(':id/slots')
+    slots(@Param('id') id: string): Promise<DeliverySlot[]> {
+        return this.catalog.listSlots(id);
     }
 }

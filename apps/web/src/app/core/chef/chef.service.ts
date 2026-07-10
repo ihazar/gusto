@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
+    AvailabilityWindowInput,
     Chef,
     ChefEarnings,
     CreateMealDto,
@@ -206,6 +207,12 @@ export class ChefService {
     setAcceptingOrders(acceptingOrders: boolean): void {
         this.persist({ ...this.state(), acceptingOrders });
         void this.patch('/me/settings', { acceptingOrders });
+    }
+
+    /** Replace the weekly ordering windows (order-ahead capacity). */
+    async setAvailability(windows: AvailabilityWindowInput[]): Promise<void> {
+        const chef = await firstValueFrom(this.http.put<Chef>(`${this.base}/me/availability`, { windows }));
+        this.persist(chef);
     }
 
     /** Add a meal to the menu. */

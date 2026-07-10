@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Dish as PDish } from '@prisma/client';
-import { CatalogQuery, Diet, distanceKm, KitchenDetail, KitchenSummary } from '@gusto/contracts';
+import { CatalogQuery, DeliverySlot, Diet, distanceKm, KitchenDetail, KitchenSummary } from '@gusto/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { MENU_INCLUDE, toChef } from '../chef/chef.mapper';
+import { localNow, slotKey, upcomingSlots } from '../orders/slots';
 
 /**
  * Read-only customer catalog: discover live kitchens near you and view a
@@ -50,6 +51,28 @@ export class CatalogService {
         const chef = toChef({ ...profile, dishes: profile.dishes.filter((d) => d.available) });
         const rating = profile.ratingCount ? Math.round((profile.ratingSum / profile.ratingCount) * 10) / 10 : 0;
         return { ...chef, favorited, rating, ratingCount: profile.ratingCount };
+    }
+
+    /** Orderable delivery windows for the next 7 days, with live capacity. */
+    async listSlots(kitchenId: string): Promise<DeliverySlot[]> {
+        const profile = await this.prisma.chefProfile.findFirst({
+            where: { id: kitchenId, onboarded: true, active: true },
+            include: { availability: true },
+        });
+        if (!profile) throw new NotFoundException('Kitchen not found');
+        const now = localNow();
+        const counts = await this.prisma.order.groupBy({
+            by: ['availabilityId', 'scheduledDate'],
+            where: {
+                chefProfileId: kitchenId,
+                availabilityId: { not: null },
+                scheduledDate: { gte: now.date },
+                status: { not: 'CANCELLED' },
+            },
+            _count: { _all: true },
+        });
+        const booked = new Map(counts.map((c) => [slotKey(c.availabilityId!, c.scheduledDate!), c._count._all]));
+        return upcomingSlots(profile.availability, booked, now);
     }
 
     async listFavorites(userId: string): Promise<KitchenSummary[]> {

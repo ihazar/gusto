@@ -8,6 +8,7 @@ import {
     CreateOrderDto,
     CreateReviewDto,
     DeliveryJob,
+    DeliverySlot,
     DevicePlatform,
     KitchenDetail,
     KitchenSummary,
@@ -144,6 +145,7 @@ export const api = {
         list: (query: CatalogQuery, accessToken?: string) =>
             get<KitchenSummary[]>(`/kitchens${qs(query as Record<string, string | number | undefined>)}`, accessToken),
         get: (id: string, accessToken?: string) => get<KitchenDetail>(`/kitchens/${id}`, accessToken),
+        slots: (id: string) => get<DeliverySlot[]>(`/kitchens/${id}/slots`),
     },
 
     favorites: {

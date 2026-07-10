@@ -152,6 +152,8 @@ model Availability {
   endTime   String // "14:00"
   maxOrders Int    @default(10)
 
+  orders Order[]
+
   @@index([chefProfileId])
 }
 
@@ -194,6 +196,14 @@ model Order {
   deliveryAddress String
   placedAt        DateTime @default(now())
 
+  // Order-ahead slot: which weekly window + date this order was placed for.
+  // Window times are snapshotted so later edits/deletes don't rewrite history.
+  availabilityId String?
+  availability   Availability? @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
+  scheduledDate  String? // "YYYY-MM-DD" in kitchen-local time (Asia/Jerusalem)
+  slotStart      String? // "08:00"
+  slotEnd        String? // "14:00"
+
   items    OrderItem[]
   payment  Payment?
   payout   Payout?
@@ -202,6 +212,8 @@ model Order {
 
   @@index([chefProfileId])
   @@index([customerId])
+  // Capacity counting: orders booked into one slot (window × date).
+  @@index([availabilityId, scheduledDate])
 }
 
 model OrderItem {

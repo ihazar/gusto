@@ -4,6 +4,7 @@ import {
     Chef,
     CreateMealDto,
     OnboardingDto,
+    SetAvailabilityDto,
     UpdateChefProfileDto,
     UpdateChefSettingsDto,
     UpdateMealDto,
@@ -76,6 +77,21 @@ export class ChefService {
         if (patch.acceptingOrders !== undefined) data.acceptingOrders = patch.acceptingOrders;
         const profile = await this.prisma.chefProfile.update({ where: { userId }, data, include: MENU_INCLUDE });
         return toChef(profile);
+    }
+
+    /**
+     * Replace the chef's weekly ordering windows. Existing orders keep their
+     * snapshotted slot times (Order.availabilityId just goes null on delete).
+     */
+    async setAvailability(userId: string, dto: SetAvailabilityDto): Promise<Chef> {
+        const profile = await this.ensureProfile(userId);
+        await this.prisma.$transaction([
+            this.prisma.availability.deleteMany({ where: { chefProfileId: profile.id } }),
+            this.prisma.availability.createMany({
+                data: dto.windows.map((w) => ({ chefProfileId: profile.id, ...w })),
+            }),
+        ]);
+        return this.getForUser(userId);
     }
 
     /** Add a meal to the chef's menu. */

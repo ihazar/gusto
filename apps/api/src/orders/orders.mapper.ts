@@ -38,5 +38,9 @@ export function toOrder(o: OrderRow): Order {
         kitchenId: o.chefProfileId,
         kitchenName: o.chef?.kitchenName ?? undefined,
         reviewed: o.review != null,
+        scheduled:
+            o.scheduledDate && o.slotStart && o.slotEnd
+                ? { date: o.scheduledDate, startTime: o.slotStart, endTime: o.slotEnd }
+                : undefined,
     };
 }

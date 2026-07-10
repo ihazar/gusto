@@ -37,8 +37,28 @@ export const updateChefSettingsSchema = z.object({
     acceptingOrders: z.boolean().optional(),
 });
 
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** One weekly ordering window (e.g. Sun 08:00–14:00, max 10 orders). */
+export const availabilityWindowSchema = z
+    .object({
+        /** 0 = Sunday … 6 = Saturday. */
+        weekday: z.number().int().min(0).max(6),
+        startTime: z.string().regex(HHMM),
+        endTime: z.string().regex(HHMM),
+        maxOrders: z.number().int().min(1).max(500),
+    })
+    .refine((w) => w.startTime < w.endTime, { message: 'startTime must be before endTime' });
+
+/** Replace the chef's weekly ordering windows. Empty = ASAP ordering only. */
+export const setAvailabilitySchema = z.object({
+    windows: z.array(availabilityWindowSchema).max(28),
+});
+
 export type UpdateChefProfileDto = z.infer<typeof updateChefProfileSchema>;
 export type UpdateChefSettingsDto = z.infer<typeof updateChefSettingsSchema>;
+export type AvailabilityWindowInput = z.infer<typeof availabilityWindowSchema>;
+export type SetAvailabilityDto = z.infer<typeof setAvailabilitySchema>;
 
 /** A new meal a chef adds from the Meals tab. */
 export const createMealSchema = z.object({

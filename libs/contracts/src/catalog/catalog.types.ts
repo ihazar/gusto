@@ -36,3 +36,22 @@ export interface KitchenDetail extends Chef {
     rating: number;
     ratingCount: number;
 }
+
+/**
+ * A concrete, orderable delivery window: one Availability window on one
+ * calendar date, with live remaining capacity. Customers pick one at checkout
+ * when the kitchen takes scheduled (order-ahead) orders.
+ */
+export interface DeliverySlot {
+    availabilityId: string;
+    /** "YYYY-MM-DD" in the kitchen's local time (Asia/Jerusalem). */
+    date: string;
+    /** 0 = Sunday … 6 = Saturday. */
+    weekday: number;
+    /** "HH:mm" window bounds. */
+    startTime: string;
+    endTime: string;
+    maxOrders: number;
+    /** Orders still available in this slot (0 = full). */
+    remaining: number;
+}

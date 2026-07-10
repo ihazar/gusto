@@ -1,12 +1,13 @@
 import {
     BadRequestException,
+    ConflictException,
     Inject,
     Injectable,
     NotFoundException,
     OnModuleDestroy,
     OnModuleInit,
 } from '@nestjs/common';
-import { Order as POrder, Payment as PPayment } from '@prisma/client';
+import { Availability as PAvailability, Order as POrder, Payment as PPayment, Prisma } from '@prisma/client';
 import {
     ChefEarnings,
     CreateOrderDto,
@@ -21,14 +22,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { computeTotals } from './fees';
 import { PAYMENT_PROVIDER, PaymentProvider } from './payment.provider';
 import { ORDER_INCLUDE, toOrder } from './orders.mapper';
+import { AcceptTimeoutQueue } from './accept-timeout.queue';
+import { isOrderableSlot, localNow } from './slots';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 /**
  * Customer ordering + the chef-side order lifecycle (accept/reject/advance)
  * with its payment side effects: authorize at order time, capture on delivery
- * (recording a chef payout), void/refund on cancel. A background sweep
- * auto-cancels orders the chef never accepts (BullMQ is the production path).
+ * (recording a chef payout), void/refund on cancel. Accept-timeouts run as
+ * durable BullMQ delayed jobs; a low-frequency sweep remains as a safety net
+ * for orders whose job never got enqueued (Redis briefly down).
  */
 @Injectable()
 export class OrdersService implements OnModuleInit, OnModuleDestroy {
@@ -38,10 +42,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     constructor(
         private readonly prisma: PrismaService,
         @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProvider,
+        private readonly timeouts: AcceptTimeoutQueue,
     ) {}
 
     onModuleInit(): void {
-        this.sweepTimer = setInterval(() => void this.sweepStaleOrders().catch(() => undefined), 60_000);
+        this.timeouts.onExpire((orderId) => this.cancelIfUnaccepted(orderId));
+        this.sweepTimer = setInterval(() => void this.sweepStaleOrders().catch(() => undefined), 5 * 60_000);
     }
 
     onModuleDestroy(): void {
@@ -51,10 +57,12 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
     async createOrder(customerId: string, customerName: string, dto: CreateOrderDto): Promise<Order> {
         const kitchen = await this.prisma.chefProfile.findFirst({
             where: { id: dto.kitchenId, onboarded: true, active: true },
-            include: { dishes: { where: { available: true } } },
+            include: { dishes: { where: { available: true } }, availability: true },
         });
         if (!kitchen) throw new NotFoundException('Kitchen not available');
         if (!kitchen.acceptingOrders) throw new BadRequestException('This kitchen is not taking orders right now');
+
+        const slot = this.resolveSlot(kitchen.availability, dto);
 
         const dishes = new Map(kitchen.dishes.map((d) => [d.id, d]));
         const lines = dto.items.map((it) => {
@@ -67,32 +75,39 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
         const subtotal = lines.reduce((s, l) => s + l.dish.price * l.qty, 0);
         const t = computeTotals(subtotal, dto.tip, currency);
 
-        const order = await this.prisma.order.create({
-            data: {
-                customerId,
-                customerName,
-                chefProfileId: kitchen.id,
-                status: 'NEW',
-                subtotal: t.subtotal,
-                serviceFee: t.serviceFee,
-                deliveryFee: t.deliveryFee,
-                tip: t.tip,
-                vat: t.vat,
-                total: t.total,
-                commission: t.commission,
-                currency,
-                deliveryAddress: dto.deliveryAddress,
-                items: {
-                    create: lines.map((l) => ({
-                        dishId: l.dish.id,
-                        name: l.dish.name,
-                        qty: l.qty,
-                        unitPrice: l.dish.price,
-                    })),
-                },
+        const data: Prisma.OrderCreateInput = {
+            customer: { connect: { id: customerId } },
+            customerName,
+            chef: { connect: { id: kitchen.id } },
+            status: 'NEW',
+            subtotal: t.subtotal,
+            serviceFee: t.serviceFee,
+            deliveryFee: t.deliveryFee,
+            tip: t.tip,
+            vat: t.vat,
+            total: t.total,
+            commission: t.commission,
+            currency,
+            deliveryAddress: dto.deliveryAddress,
+            ...(slot && {
+                availability: { connect: { id: slot.window.id } },
+                scheduledDate: slot.date,
+                slotStart: slot.window.startTime,
+                slotEnd: slot.window.endTime,
+            }),
+            items: {
+                create: lines.map((l) => ({
+                    dishId: l.dish.id,
+                    name: l.dish.name,
+                    qty: l.qty,
+                    unitPrice: l.dish.price,
+                })),
             },
-            include: ORDER_INCLUDE,
-        });
+        };
+
+        const order = slot
+            ? await this.createWithCapacityCheck(data, slot.window.id, slot.date, slot.window.maxOrders)
+            : await this.prisma.order.create({ data, include: ORDER_INCLUDE });
 
         // Authorize (not capture) the total; capture happens on handoff (M4).
         const auth = await this.payments.authorize(t.total, currency, order.id);
@@ -107,7 +122,66 @@ export class OrdersService implements OnModuleInit, OnModuleDestroy {
             },
         });
 
+        await this.timeouts.schedule(order.id, this.acceptTimeoutMs);
+
         return toOrder({ ...order, payment });
+    }
+
+    /**
+     * Kitchens with weekly windows configured take order-ahead only: the
+     * customer must pick a valid upcoming slot. Kitchens without windows keep
+     * ASAP ordering (slot is ignored).
+     */
+    private resolveSlot(windows: PAvailability[], dto: CreateOrderDto): { window: PAvailability; date: string } | null {
+        if (windows.length === 0) return null;
+        if (!dto.slot) {
+            throw new BadRequestException('This kitchen takes scheduled orders — pick a delivery window');
+        }
+        const window = windows.find((w) => w.id === dto.slot!.availabilityId);
+        if (!window || !isOrderableSlot(window, dto.slot.date, localNow())) {
+            throw new BadRequestException('That delivery window is no longer available');
+        }
+        return { window, date: dto.slot.date };
+    }
+
+    /**
+     * Create a slot order only if the window still has capacity. The count +
+     * create run in one serializable transaction so two simultaneous checkouts
+     * can't both grab the last spot; on serialization conflict we retry.
+     */
+    private async createWithCapacityCheck(
+        data: Prisma.OrderCreateInput,
+        availabilityId: string,
+        scheduledDate: string,
+        maxOrders: number,
+    ) {
+        for (let attempt = 1; ; attempt++) {
+            try {
+                return await this.prisma.$transaction(
+                    async (tx) => {
+                        const used = await tx.order.count({
+                            where: { availabilityId, scheduledDate, status: { not: OrderStatus.CANCELLED } },
+                        });
+                        if (used >= maxOrders) {
+                            throw new ConflictException('That delivery window just filled up — pick another');
+                        }
+                        return tx.order.create({ data, include: ORDER_INCLUDE });
+                    },
+                    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+                );
+            } catch (e) {
+                const serializationConflict = e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2034';
+                if (!serializationConflict || attempt >= 3) throw e;
+            }
+        }
+    }
+
+    /** BullMQ timeout fired: cancel + void if the chef still hasn't accepted. */
+    private async cancelIfUnaccepted(orderId: string): Promise<void> {
+        const order = await this.prisma.order.findUnique({ where: { id: orderId }, include: { payment: true } });
+        if (!order || order.status !== OrderStatus.NEW) return;
+        await this.releaseFunds(order);
+        await this.prisma.order.update({ where: { id: order.id }, data: { status: OrderStatus.CANCELLED } });
     }
 
     async listForCustomer(customerId: string): Promise<Order[]> {

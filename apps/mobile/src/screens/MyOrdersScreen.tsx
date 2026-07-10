@@ -7,6 +7,16 @@ import { RootStackParamList } from '../navigation/RootNavigator';
 import { useAuth } from '../auth/auth-context';
 import { api } from '../api/client';
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "2026-07-12" → "Sun, Jul 12" (calendar math only; no timezone parsing). */
+function scheduledLabel(s: NonNullable<Order['scheduled']>): string {
+    const [y, m, d] = s.date.split('-').map(Number);
+    const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+    return `${weekday}, ${month} ${d} · ${s.startTime}–${s.endTime}`;
+}
+
 const STATUS_LABEL: Record<OrderStatus, string> = {
     [OrderStatus.NEW]: '🆕 Placed',
     [OrderStatus.IN_PREPARATION]: '🍳 In preparation',
@@ -78,6 +88,9 @@ export function MyOrdersScreen({ navigation }: Props) {
                                     <Text style={styles.kitchen}>{item.kitchenName ?? 'Kitchen'}</Text>
                                     <Text style={styles.status}>{STATUS_LABEL[item.status]}</Text>
                                 </View>
+                                {item.scheduled && (
+                                    <Text style={styles.scheduled}>🗓 For {scheduledLabel(item.scheduled)}</Text>
+                                )}
                                 {item.items.map((i) => (
                                     <Text key={i.mealId} style={styles.line}>
                                         {i.qty}× {i.name}
@@ -138,6 +151,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
     },
     line: { color: '#44403a', fontSize: 14 },
+    scheduled: { color: '#7a4a36', fontSize: 13, fontWeight: '600' },
     cardFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
     addr: { color: '#8a8275', fontSize: 13, flex: 1 },
     total: { color: '#d2553a', fontWeight: '800', fontSize: 16 },

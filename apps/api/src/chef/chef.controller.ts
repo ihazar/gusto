@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import {
     Chef,
     ChefEarnings,
@@ -7,6 +7,8 @@ import {
     OnboardingDto,
     onboardingSchema,
     Order,
+    SetAvailabilityDto,
+    setAvailabilitySchema,
     UpdateChefProfileDto,
     updateChefProfileSchema,
     UpdateChefSettingsDto,
@@ -54,6 +56,15 @@ export class ChefController {
         @Body(new ZodValidationPipe(updateChefSettingsSchema)) dto: UpdateChefSettingsDto,
     ): Promise<Chef> {
         return this.chefs.updateSettings(user.id, dto);
+    }
+
+    /** Replace the weekly ordering windows (empty list = ASAP ordering). */
+    @Put('me/availability')
+    setAvailability(
+        @CurrentUser() user: AuthenticatedUser,
+        @Body(new ZodValidationPipe(setAvailabilitySchema)) dto: SetAvailabilityDto,
+    ): Promise<Chef> {
+        return this.chefs.setAvailability(user.id, dto);
     }
 
     @Post('me/onboarding/complete')

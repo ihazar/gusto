@@ -132,6 +132,15 @@ export interface OrderItem {
     price: number;
 }
 
+/** The delivery window an order-ahead order was placed for. */
+export interface OrderSchedule {
+    /** "YYYY-MM-DD" in the kitchen's local time. */
+    date: string;
+    /** "HH:mm" window bounds, snapshotted at order time. */
+    startTime: string;
+    endTime: string;
+}
+
 /** A customer order placed against a chef. */
 export interface Order {
     id: string;
@@ -153,6 +162,8 @@ export interface Order {
     kitchenName?: string;
     /** Whether the customer has already reviewed this order. */
     reviewed?: boolean;
+    /** Delivery window (present on order-ahead orders; absent = ASAP). */
+    scheduled?: OrderSchedule;
 }
 
 /** A home-chef profile, as built during onboarding. */

@@ -2,7 +2,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Diet, Meal, Order, OrderStatus } from '@gusto/contracts';
+import { AvailabilityWindowInput, Diet, Meal, Order, OrderStatus } from '@gusto/contracts';
 import { ChefService } from '../../core/chef/chef.service';
 
 type Tab = 'home' | 'meals' | 'orders' | 'settings';
@@ -310,6 +310,9 @@ interface MealForm {
                                                     }
                                                 </ul>
                                                 <p class="order-addr">📍 {{ order.deliveryAddress }}</p>
+                                                @if (order.scheduled) {
+                                                    <p class="order-slot">🗓 For {{ scheduledLabel(order) }}</p>
+                                                }
                                                 <p class="order-time">🕒 {{ order.placedAt | date: 'shortTime' }}</p>
                                                 @if (nextStatus(order.status); as next) {
                                                     <button class="advance" (click)="advance(order, next)">
@@ -357,6 +360,54 @@ interface MealForm {
                                         (change)="onAcceptingOrders($event)"
                                     />
                                 </label>
+                                <h4>Weekly ordering windows</h4>
+                                <p class="hint">
+                                    Customers order ahead into these windows, capped at your max per window. Leave empty
+                                    to take ASAP orders instead.
+                                </p>
+                                @for (w of windows; track $index; let i = $index) {
+                                    <div class="window-row">
+                                        <select [(ngModel)]="w.weekday" (ngModelChange)="windowsDirty = true">
+                                            @for (d of weekdayNames; track $index; let wd = $index) {
+                                                <option [ngValue]="wd">{{ d }}</option>
+                                            }
+                                        </select>
+                                        <input
+                                            type="time"
+                                            [(ngModel)]="w.startTime"
+                                            (ngModelChange)="windowsDirty = true"
+                                        />
+                                        <span class="win-sep">–</span>
+                                        <input
+                                            type="time"
+                                            [(ngModel)]="w.endTime"
+                                            (ngModelChange)="windowsDirty = true"
+                                        />
+                                        <input
+                                            class="win-max"
+                                            type="number"
+                                            min="1"
+                                            max="500"
+                                            [(ngModel)]="w.maxOrders"
+                                            (ngModelChange)="windowsDirty = true"
+                                            title="Max orders in this window"
+                                        />
+                                        <button class="win-del" (click)="removeWindow(i)" title="Remove window">
+                                            ✕
+                                        </button>
+                                    </div>
+                                }
+                                <div class="win-actions">
+                                    <button class="win-add" (click)="addWindow()">+ Add window</button>
+                                    <button class="primary" (click)="saveWindows()">Save windows</button>
+                                    @if (windowsSaved()) {
+                                        <span class="saved">✔ Saved</span>
+                                    }
+                                </div>
+                                @if (windowsError(); as we) {
+                                    <p class="win-error">{{ we }}</p>
+                                }
+
                                 <div class="verified-row">
                                     <span>
                                         <strong>Verified chef</strong>
@@ -1003,6 +1054,60 @@ interface MealForm {
                 color: #8a8275;
                 font-size: 12px;
             }
+            .order-slot {
+                margin: 0;
+                color: #7a4a36;
+                font-size: 12px;
+                font-weight: 700;
+            }
+            .window-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            .window-row select,
+            .window-row input {
+                margin: 0;
+            }
+            .window-row select {
+                flex: 1;
+            }
+            .win-sep {
+                color: #8a8275;
+            }
+            .win-max {
+                width: 74px;
+            }
+            .win-del {
+                border: 0;
+                background: none;
+                color: #b3261e;
+                font-size: 15px;
+                cursor: pointer;
+                padding: 4px 6px;
+            }
+            .win-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-top: 4px;
+            }
+            .win-add {
+                border: 1px dashed #d2553a;
+                background: #fff0e8;
+                color: #d2553a;
+                font-weight: 700;
+                font-size: 13px;
+                padding: 8px 14px;
+                border-radius: 9px;
+                cursor: pointer;
+            }
+            .win-error {
+                color: #b3261e;
+                font-size: 13px;
+                margin: 6px 0 0;
+            }
             .advance {
                 margin-top: 6px;
                 border: 0;
@@ -1232,6 +1337,13 @@ export class ChefOnboardingComponent {
     settings = this.toSettings();
     readonly saved = signal(false);
 
+    // Weekly ordering windows editor
+    readonly weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    windows: AvailabilityWindowInput[] = [];
+    windowsDirty = false;
+    readonly windowsSaved = signal(false);
+    readonly windowsError = signal<string | null>(null);
+
     readonly fullAddress = computed(() => {
         const a = this.chef().address;
         return [a.line1, a.line2, a.city, a.region, a.postalCode, a.country].filter(Boolean).join(', ');
@@ -1244,6 +1356,18 @@ export class ChefOnboardingComponent {
         effect(() => {
             if (this.chefService.loaded() && !this.chefService.onboarded()) {
                 void this.router.navigate(['/chef/onboarding']);
+            }
+        });
+        // Adopt the server's windows until the chef starts editing them.
+        effect(() => {
+            const av = this.chef().availability;
+            if (!this.windowsDirty && av) {
+                this.windows = av.map((w) => ({
+                    weekday: w.weekday,
+                    startTime: w.startTime,
+                    endTime: w.endTime,
+                    maxOrders: w.maxOrders,
+                }));
             }
         });
     }
@@ -1348,6 +1472,48 @@ export class ChefOnboardingComponent {
 
     moneyLabel(amount: number, currency: string): string {
         return `${this.symbol(currency)}${amount}`;
+    }
+
+    // ---- Ordering windows ----
+    addWindow(): void {
+        this.windows.push({ weekday: 0, startTime: '10:00', endTime: '14:00', maxOrders: 10 });
+        this.windowsDirty = true;
+    }
+
+    removeWindow(i: number): void {
+        this.windows.splice(i, 1);
+        this.windowsDirty = true;
+    }
+
+    async saveWindows(): Promise<void> {
+        for (const w of this.windows) {
+            if (!w.startTime || !w.endTime || w.startTime >= w.endTime) {
+                this.windowsError.set('Each window needs a start time before its end time.');
+                return;
+            }
+            if (!w.maxOrders || w.maxOrders < 1) {
+                this.windowsError.set('Each window needs a max of at least 1 order.');
+                return;
+            }
+        }
+        this.windowsError.set(null);
+        try {
+            await this.chefService.setAvailability(this.windows);
+            this.windowsDirty = false;
+            this.windowsSaved.set(true);
+            setTimeout(() => this.windowsSaved.set(false), 2000);
+        } catch {
+            this.windowsError.set('Could not save your windows — check your connection and try again.');
+        }
+    }
+
+    scheduledLabel(order: Order): string {
+        const s = order.scheduled;
+        if (!s) return '';
+        const [y, m, d] = s.date.split('-').map(Number);
+        const weekday = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+        const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+        return `${weekday}, ${month} ${d} · ${s.startTime}–${s.endTime}`;
     }
 
     // ---- Settings ----
