@@ -1,0 +1,5 @@
+
+# gusto — appended to /etc/caddy/Caddyfile by deploy.sh on first deploy.
+gustochefs.com, www.gustochefs.com {
+    reverse_proxy localhost:4783
+}

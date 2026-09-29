@@ -1,0 +1,15 @@
+# /etc/systemd/system/gusto.service  (installed by deploy.sh)
+[Unit]
+Description=Gusto (NestJS API + Angular web)
+After=network.target docker.service
+
+[Service]
+# cwd must be apps/api: the API serves ../web/dist and loads ./.env from here.
+WorkingDirectory=/opt/gusto/apps/api
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=3
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
