@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { UserRole } from '@gusto/contracts';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
@@ -15,8 +16,12 @@ import { AuthService } from '../../core/auth/auth.service';
             </p>
             <div class="cta">
                 <button class="primary" (click)="openChefDashboard()">👩‍🍳 Open chef dashboard</button>
+                @if (isAdmin()) {
+                    <button class="ops" (click)="openAdmin()">🛠 Admin console</button>
+                }
                 <button (click)="signOut()">Sign out</button>
             </div>
+            <p class="hint">Customers browse &amp; order in the Gusto mobile app.</p>
         </main>
     `,
     styles: [
@@ -84,6 +89,16 @@ import { AuthService } from '../../core/auth/auth.service';
                 background: var(--gusto);
                 color: #fff;
             }
+            button.ops {
+                border-color: transparent;
+                background: #1d1b16;
+                color: #fff;
+            }
+            .hint {
+                color: #8a8275;
+                font-size: 13px;
+                margin-top: 14px;
+            }
         `,
     ],
 })
@@ -91,8 +106,16 @@ export class ComingSoonComponent {
     readonly auth = inject(AuthService);
     private readonly router = inject(Router);
 
+    isAdmin(): boolean {
+        return this.auth.user()?.roles?.includes(UserRole.ADMIN) ?? false;
+    }
+
     openChefDashboard(): Promise<boolean> {
         return this.router.navigate(['/chef']);
+    }
+
+    openAdmin(): Promise<boolean> {
+        return this.router.navigate(['/admin']);
     }
 
     async signOut(): Promise<void> {

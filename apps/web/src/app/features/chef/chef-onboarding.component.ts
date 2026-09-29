@@ -1,4 +1,4 @@
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -1352,6 +1352,9 @@ export class ChefOnboardingComponent {
 
     constructor() {
         void this.chefService.loadOrders();
+        // ponytail: 15s poll keeps the board live; swap for Socket.IO when realtime tracking lands (M4).
+        const poll = setInterval(() => void this.chefService.loadOrders(), 15_000);
+        inject(DestroyRef).onDestroy(() => clearInterval(poll));
         // A chef who hasn't finished the wizard is sent to it (once the API load settles).
         effect(() => {
             if (this.chefService.loaded() && !this.chefService.onboarded()) {
